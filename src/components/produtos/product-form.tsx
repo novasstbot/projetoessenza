@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { BarcodeScannerButton } from "@/components/produtos/barcode-scanner-button";
 import { createProduto, updateProduto } from "@/server/actions/produtos/products";
 import { produtoSchema, type ProdutoFormValues } from "@/modules/produtos/schemas";
 import type { Categoria, Marca, Produto } from "@/modules/produtos/types";
@@ -94,7 +95,13 @@ export function ProductForm({ categorias, marcas, produto, onSuccess }: ProductF
               <FormItem>
                 <FormLabel>Código interno</FormLabel>
                 <FormControl>
-                  <Input placeholder="ESS-0001" {...field} />
+                  <Input
+                    placeholder="ESS-0001"
+                    {...field}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.preventDefault();
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -106,9 +113,20 @@ export function ProductForm({ categorias, marcas, produto, onSuccess }: ProductF
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Código EAN</FormLabel>
-                <FormControl>
-                  <Input placeholder="7891234567890" {...field} />
-                </FormControl>
+                <div className="flex gap-2">
+                  <FormControl>
+                    <Input
+                      placeholder="7891234567890"
+                      {...field}
+                      onKeyDown={(e) => {
+                        // A leitora de código de barras digita rápido e envia
+                        // Enter ao final — isso não deve submeter o formulário.
+                        if (e.key === "Enter") e.preventDefault();
+                      }}
+                    />
+                  </FormControl>
+                  <BarcodeScannerButton onDetected={(code) => field.onChange(code)} />
+                </div>
                 <FormMessage />
               </FormItem>
             )}
@@ -128,7 +146,11 @@ export function ProductForm({ categorias, marcas, produto, onSuccess }: ProductF
                 >
                   <FormControl>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue>
+                        {() =>
+                          categorias.find((c) => c.id === field.value)?.nome ?? "Nenhuma"
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -156,7 +178,9 @@ export function ProductForm({ categorias, marcas, produto, onSuccess }: ProductF
                 >
                   <FormControl>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue>
+                        {() => marcas.find((m) => m.id === field.value)?.nome ?? "Nenhuma"}
+                      </SelectValue>
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>

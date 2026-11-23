@@ -80,7 +80,14 @@ export function ProductsTable({
 
         <Select value={categoriaFilter} onValueChange={(value) => setCategoriaFilter(value ?? ALL)}>
           <SelectTrigger className="w-44">
-            <SelectValue placeholder="Categoria" />
+            <SelectValue>
+              {() =>
+                categoriaFilter === ALL
+                  ? "Todas as categorias"
+                  : (categorias.find((c) => c.id === categoriaFilter)?.nome ??
+                    "Todas as categorias")
+              }
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>Todas as categorias</SelectItem>
@@ -94,7 +101,13 @@ export function ProductsTable({
 
         <Select value={marcaFilter} onValueChange={(value) => setMarcaFilter(value ?? ALL)}>
           <SelectTrigger className="w-44">
-            <SelectValue placeholder="Marca" />
+            <SelectValue>
+              {() =>
+                marcaFilter === ALL
+                  ? "Todas as marcas"
+                  : (marcas.find((m) => m.id === marcaFilter)?.nome ?? "Todas as marcas")
+              }
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>Todas as marcas</SelectItem>

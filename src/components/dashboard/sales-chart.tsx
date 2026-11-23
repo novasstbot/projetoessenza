@@ -35,11 +35,15 @@ export function SalesChart({ data }: { data: SalesChartPoint[] }) {
         <YAxis
           tickLine={false}
           axisLine={false}
+          width={72}
           tick={{ fill: "#6B5A72", fontSize: 12 }}
-          tickFormatter={(value: number) => `R$${value}`}
+          tickFormatter={(value: number) => `R$ ${new Intl.NumberFormat("pt-BR").format(value)}`}
         />
         <Tooltip
-          formatter={(value) => [`R$ ${Number(value).toFixed(2)}`, "Vendas"]}
+          formatter={(value) => [
+            `R$ ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2 }).format(Number(value))}`,
+            "Vendas",
+          ]}
           contentStyle={{
             borderRadius: 8,
             borderColor: "#E3D6CC",

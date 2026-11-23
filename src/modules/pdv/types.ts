@@ -22,6 +22,14 @@ export type ClientePdv = {
   full_name: string;
 };
 
+export type VendaCaixa = {
+  id: string;
+  total: number;
+  desconto: number;
+  created_at: string;
+  customers: { full_name: string } | null;
+};
+
 export type Caixa = {
   id: string;
   status: "aberto" | "fechado";

@@ -35,15 +35,9 @@ export async function abrirCaixa(values: AbrirCaixaFormValues) {
     throw new Error(error.message);
   }
 
-  if (parsed.valor_abertura > 0) {
-    await supabase.from("movimentacoes_caixa").insert({
-      caixa_id: caixa.id,
-      tipo: "entrada",
-      valor: parsed.valor_abertura,
-      descricao: "Abertura de caixa",
-      user_id: profile.id,
-    });
-  }
+  // valor_abertura already lives on the caixa row — no ledger entry for it,
+  // so movimentacoes_caixa (entradas) cleanly means "money brought in during
+  // the session" (sales, and future manual suprimentos) with no double count.
 
   await supabase.from("audit_logs").insert({
     user_id: profile.id,

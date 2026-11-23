@@ -32,20 +32,26 @@ export default async function CaixaPage() {
     .order("fechado_em", { ascending: false })
     .limit(10);
 
-  let movimentos: { tipo: string; valor: number }[] = [];
-  if (aberto) {
-    const { data } = await supabase
-      .from("movimentacoes_caixa")
-      .select("tipo, valor")
-      .eq("caixa_id", aberto.id);
-    movimentos = data ?? [];
+  const fechadosIds = (fechados ?? []).map((c) => c.id);
+  const caixaIdsParaMovimentos = aberto ? [aberto.id, ...fechadosIds] : fechadosIds;
+
+  const { data: todosMovimentos } = await supabase
+    .from("movimentacoes_caixa")
+    .select("caixa_id, tipo, valor")
+    .in("caixa_id", caixaIdsParaMovimentos.length > 0 ? caixaIdsParaMovimentos : ["00000000-0000-0000-0000-000000000000"]);
+
+  const totaisPorCaixa = new Map<string, { entradas: number; saidas: number }>();
+  for (const mov of todosMovimentos ?? []) {
+    const atual = totaisPorCaixa.get(mov.caixa_id) ?? { entradas: 0, saidas: 0 };
+    if (mov.tipo === "entrada") atual.entradas += mov.valor;
+    else atual.saidas += mov.valor;
+    totaisPorCaixa.set(mov.caixa_id, atual);
   }
 
-  const entradas = movimentos
-    .filter((m) => m.tipo === "entrada")
-    .reduce((sum, m) => sum + m.valor, 0);
-  const saidas = movimentos.filter((m) => m.tipo === "saida").reduce((sum, m) => sum + m.valor, 0);
-  const esperado = (aberto?.valor_abertura ?? 0) + entradas - saidas;
+  const totaisAberto = aberto ? (totaisPorCaixa.get(aberto.id) ?? { entradas: 0, saidas: 0 }) : null;
+  const esperadoAberto = aberto
+    ? aberto.valor_abertura + (totaisAberto?.entradas ?? 0) - (totaisAberto?.saidas ?? 0)
+    : 0;
 
   return (
     <div>
@@ -82,12 +88,14 @@ export default async function CaixaPage() {
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Entradas na sessão</p>
-                <p className="font-medium text-foreground">{formatCurrency(entradas)}</p>
+                <p className="text-xs text-muted-foreground">Total vendido</p>
+                <p className="font-medium text-foreground">
+                  {formatCurrency(totaisAberto?.entradas ?? 0)}
+                </p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Esperado em caixa</p>
-                <p className="font-medium text-foreground">{formatCurrency(esperado)}</p>
+                <p className="font-medium text-foreground">{formatCurrency(esperadoAberto)}</p>
               </div>
               <Button
                 size="sm"
@@ -118,39 +126,62 @@ export default async function CaixaPage() {
                 <tr>
                   <th className="px-4 py-2.5 font-medium">Período</th>
                   <th className="px-4 py-2.5 font-medium">Abertura</th>
-                  <th className="px-4 py-2.5 font-medium">Fechamento informado</th>
-                  <th className="px-4 py-2.5 font-medium">Observação</th>
+                  <th className="px-4 py-2.5 font-medium">Vendido</th>
+                  <th className="px-4 py-2.5 font-medium">Esperado</th>
+                  <th className="px-4 py-2.5 font-medium">Informado</th>
+                  <th className="px-4 py-2.5 font-medium">Diferença</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {!fechados || fechados.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-10 text-center text-muted-foreground">
+                    <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
                       Nenhum caixa fechado ainda.
                     </td>
                   </tr>
                 ) : (
-                  fechados.map((c) => (
-                    <tr key={c.id}>
-                      <td className="px-4 py-2.5 text-muted-foreground">
-                        {formatDateTime(c.aberto_em)}
-                        {c.fechado_em && <> — {formatDateTime(c.fechado_em)}</>}
-                      </td>
-                      <td className="px-4 py-2.5 text-foreground">
-                        {formatCurrency(c.valor_abertura)}
-                      </td>
-                      <td className="px-4 py-2.5 text-foreground">
-                        {c.valor_fechamento_informado !== null ? (
-                          formatCurrency(c.valor_fechamento_informado)
-                        ) : (
-                          <Badge variant="outline">—</Badge>
-                        )}
-                      </td>
-                      <td className="px-4 py-2.5 text-muted-foreground">
-                        {c.observacao_fechamento ?? "—"}
-                      </td>
-                    </tr>
-                  ))
+                  fechados.map((c) => {
+                    const totais = totaisPorCaixa.get(c.id) ?? { entradas: 0, saidas: 0 };
+                    const esperado = c.valor_abertura + totais.entradas - totais.saidas;
+                    const informado = c.valor_fechamento_informado;
+                    const diferenca = informado !== null ? informado - esperado : null;
+
+                    return (
+                      <tr key={c.id}>
+                        <td className="px-4 py-2.5 text-muted-foreground">
+                          {formatDateTime(c.aberto_em)}
+                          {c.fechado_em && <> — {formatDateTime(c.fechado_em)}</>}
+                        </td>
+                        <td className="px-4 py-2.5 text-foreground">
+                          {formatCurrency(c.valor_abertura)}
+                        </td>
+                        <td className="px-4 py-2.5 text-foreground">
+                          {formatCurrency(totais.entradas)}
+                        </td>
+                        <td className="px-4 py-2.5 text-foreground">{formatCurrency(esperado)}</td>
+                        <td className="px-4 py-2.5 text-foreground">
+                          {informado !== null ? (
+                            formatCurrency(informado)
+                          ) : (
+                            <Badge variant="outline">—</Badge>
+                          )}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          {diferenca === null ? (
+                            "—"
+                          ) : diferenca === 0 ? (
+                            <Badge variant="secondary">Confere</Badge>
+                          ) : (
+                            <Badge variant={diferenca < 0 ? "destructive" : "outline"}>
+                              {diferenca > 0 ? "+" : ""}
+                              {formatCurrency(diferenca)}
+                              {diferenca < 0 ? " (furo)" : " (sobra)"}
+                            </Badge>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

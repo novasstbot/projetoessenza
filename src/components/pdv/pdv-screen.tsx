@@ -10,6 +10,7 @@ import { ProductSearch } from "@/components/pdv/product-search";
 import { CartTable } from "@/components/pdv/cart-table";
 import { PaymentDialog } from "@/components/pdv/payment-dialog";
 import { CloseCaixaDialog } from "@/components/pdv/close-caixa-dialog";
+import { VendasCaixaDialog } from "@/components/pdv/vendas-caixa-dialog";
 import type { CartItem, ClientePdv, FormaPagamento, ProdutoPdv } from "@/modules/pdv/types";
 
 function formatCurrency(value: number) {
@@ -88,7 +89,10 @@ export function PdvScreen({
                 minute: "2-digit",
               })}
             </span>
-            <CloseCaixaDialog caixaId={caixaId} />
+            <div className="flex gap-2">
+              <VendasCaixaDialog caixaId={caixaId} />
+              <CloseCaixaDialog caixaId={caixaId} />
+            </div>
           </div>
 
           <div className="space-y-1.5">

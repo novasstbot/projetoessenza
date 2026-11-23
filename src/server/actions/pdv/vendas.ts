@@ -27,3 +27,21 @@ export async function finalizarVenda(values: FinalizarVendaValues) {
 
   return data as string;
 }
+
+export async function getVendasCaixa(caixaId: string) {
+  await requireRole(["admin", "gerente", "vendedor"]);
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("vendas")
+    .select("id, total, desconto, created_at, customers(full_name)")
+    .eq("caixa_id", caixaId)
+    .eq("status", "concluida")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}

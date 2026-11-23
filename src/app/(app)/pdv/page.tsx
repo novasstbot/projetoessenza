@@ -22,7 +22,7 @@ export default async function PdvPage() {
     );
   }
 
-  const [{ data: produtos }, { data: estoqueAtual }, { data: formasPagamento }] =
+  const [{ data: produtos }, { data: estoqueAtual }, { data: formasPagamento }, { data: clientes }] =
     await Promise.all([
       supabase
         .from("produtos")
@@ -31,6 +31,7 @@ export default async function PdvPage() {
         .order("nome"),
       supabase.from("estoque_atual").select("produto_id, quantidade_atual"),
       supabase.from("formas_pagamento").select("id, nome").eq("ativo", true).order("nome"),
+      supabase.from("customers").select("id, full_name").eq("ativo", true).order("full_name"),
     ]);
 
   const estoquePorProduto = new Map(
@@ -48,6 +49,7 @@ export default async function PdvPage() {
       <PdvScreen
         produtos={produtosPdv}
         formasPagamento={formasPagamento ?? []}
+        clientes={clientes ?? []}
         caixaId={caixa.id}
         caixaAbertoEm={caixa.aberto_em}
       />

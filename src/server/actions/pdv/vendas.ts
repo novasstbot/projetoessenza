@@ -14,6 +14,7 @@ export async function finalizarVenda(values: FinalizarVendaValues) {
     p_itens: parsed.itens,
     p_pagamentos: parsed.pagamentos,
     p_desconto: parsed.desconto,
+    p_cliente_id: parsed.clienteId ?? null,
   });
 
   if (error) {

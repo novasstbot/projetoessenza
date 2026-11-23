@@ -27,5 +27,6 @@ export const finalizarVendaSchema = z.object({
     .min(1, "Adicione ao menos um produto"),
   pagamentos: z.array(pagamentoSchema).min(1, "Informe ao menos uma forma de pagamento"),
   desconto: z.number().min(0).default(0),
+  clienteId: z.string().uuid().optional(),
 });
 export type FinalizarVendaValues = z.infer<typeof finalizarVendaSchema>;

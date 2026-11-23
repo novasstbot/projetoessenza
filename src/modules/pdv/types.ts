@@ -17,6 +17,11 @@ export type CartItem = {
   quantidade: number;
 };
 
+export type ClientePdv = {
+  id: string;
+  full_name: string;
+};
+
 export type Caixa = {
   id: string;
   status: "aberto" | "fechado";

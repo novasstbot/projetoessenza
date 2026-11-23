@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Trash2, CreditCard } from "lucide-react";
+import { Plus, Trash2, CreditCard, User, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Select,
@@ -21,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { finalizarVenda } from "@/server/actions/pdv/vendas";
-import type { CartItem, FormaPagamento } from "@/modules/pdv/types";
+import type { CartItem, ClientePdv, FormaPagamento } from "@/modules/pdv/types";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -29,15 +30,82 @@ function formatCurrency(value: number) {
 
 type PaymentLine = { id: string; forma_pagamento_id: string; valor: number };
 
+function ClientePicker({
+  clientes,
+  clienteId,
+  onChange,
+}: {
+  clientes: ClientePdv[];
+  clienteId: string | null;
+  onChange: (id: string | null) => void;
+}) {
+  const [term, setTerm] = useState("");
+  const selecionado = clientes.find((c) => c.id === clienteId);
+
+  const matches = useMemo(() => {
+    const t = term.trim().toLowerCase();
+    if (!t) return [];
+    return clientes.filter((c) => c.full_name.toLowerCase().includes(t)).slice(0, 5);
+  }, [clientes, term]);
+
+  if (selecionado) {
+    return (
+      <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm">
+        <span className="flex items-center gap-1.5 text-foreground">
+          <User className="size-3.5" />
+          {selecionado.full_name}
+        </span>
+        <button
+          type="button"
+          onClick={() => onChange(null)}
+          className="text-muted-foreground hover:text-destructive"
+          aria-label="Remover cliente"
+        >
+          <X className="size-3.5" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <Input
+        value={term}
+        onChange={(e) => setTerm(e.target.value)}
+        placeholder="Cliente (opcional) — venda avulsa se não informar"
+      />
+      {matches.length > 0 && (
+        <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-border bg-popover shadow-md">
+          {matches.map((cliente) => (
+            <button
+              key={cliente.id}
+              type="button"
+              onClick={() => {
+                onChange(cliente.id);
+                setTerm("");
+              }}
+              className="flex w-full items-center px-3 py-2 text-left text-sm hover:bg-muted"
+            >
+              {cliente.full_name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PaymentForm({
   items,
   desconto,
   formasPagamento,
+  clientes,
   onSuccess,
 }: {
   items: CartItem[];
   desconto: number;
   formasPagamento: FormaPagamento[];
+  clientes: ClientePdv[];
   onSuccess: () => void;
 }) {
   const router = useRouter();
@@ -47,6 +115,7 @@ function PaymentForm({
   const [lines, setLines] = useState<PaymentLine[]>(() => [
     { id: crypto.randomUUID(), forma_pagamento_id: formasPagamento[0]?.id ?? "", valor: total },
   ]);
+  const [clienteId, setClienteId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const alocado = lines.reduce((sum, l) => sum + l.valor, 0);
@@ -81,6 +150,7 @@ function PaymentForm({
           valor: l.valor,
         })),
         desconto,
+        clienteId: clienteId ?? undefined,
       });
       toast.success("Venda finalizada.");
       onSuccess();
@@ -94,6 +164,11 @@ function PaymentForm({
 
   return (
     <div className="space-y-3">
+      <div className="space-y-1.5">
+        <Label>Cliente</Label>
+        <ClientePicker clientes={clientes} clienteId={clienteId} onChange={setClienteId} />
+      </div>
+
       {lines.map((line) => (
         <div key={line.id} className="flex items-end gap-2">
           <div className="flex-1 space-y-1.5">
@@ -167,6 +242,7 @@ export function PaymentDialog({
   items,
   desconto,
   formasPagamento,
+  clientes,
   onSuccess,
 }: {
   open: boolean;
@@ -174,6 +250,7 @@ export function PaymentDialog({
   items: CartItem[];
   desconto: number;
   formasPagamento: FormaPagamento[];
+  clientes: ClientePdv[];
   onSuccess: () => void;
 }) {
   const subtotal = items.reduce((sum, i) => sum + i.produto.preco_venda * i.quantidade, 0);
@@ -194,6 +271,7 @@ export function PaymentDialog({
             items={items}
             desconto={desconto}
             formasPagamento={formasPagamento}
+            clientes={clientes}
             onSuccess={onSuccess}
           />
         )}

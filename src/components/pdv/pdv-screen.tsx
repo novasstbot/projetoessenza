@@ -10,7 +10,7 @@ import { ProductSearch } from "@/components/pdv/product-search";
 import { CartTable } from "@/components/pdv/cart-table";
 import { PaymentDialog } from "@/components/pdv/payment-dialog";
 import { CloseCaixaDialog } from "@/components/pdv/close-caixa-dialog";
-import type { CartItem, FormaPagamento, ProdutoPdv } from "@/modules/pdv/types";
+import type { CartItem, ClientePdv, FormaPagamento, ProdutoPdv } from "@/modules/pdv/types";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -19,11 +19,13 @@ function formatCurrency(value: number) {
 export function PdvScreen({
   produtos,
   formasPagamento,
+  clientes,
   caixaId,
   caixaAbertoEm,
 }: {
   produtos: ProdutoPdv[];
   formasPagamento: FormaPagamento[];
+  clientes: ClientePdv[];
   caixaId: string;
   caixaAbertoEm: string;
 }) {
@@ -126,6 +128,7 @@ export function PdvScreen({
         items={items}
         desconto={desconto}
         formasPagamento={formasPagamento}
+        clientes={clientes}
         onSuccess={() => {
           setItems([]);
           setDesconto(0);

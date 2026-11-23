@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import {
   Form,
   FormControl,
@@ -206,13 +207,7 @@ export function ProductForm({ categorias, marcas, produto, onSuccess }: ProductF
               <FormItem>
                 <FormLabel>Custo (R$)</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={field.value}
-                    onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
-                  />
+                  <CurrencyInput value={field.value} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -225,13 +220,7 @@ export function ProductForm({ categorias, marcas, produto, onSuccess }: ProductF
               <FormItem>
                 <FormLabel>Preço de venda (R$)</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={field.value}
-                    onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
-                  />
+                  <CurrencyInput value={field.value} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

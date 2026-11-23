@@ -30,6 +30,7 @@ export function SalesChart({ data }: { data: SalesChartPoint[] }) {
           dataKey="day"
           tickLine={false}
           axisLine={false}
+          padding={{ left: 24, right: 24 }}
           tick={{ fill: "#6B5A72", fontSize: 12 }}
         />
         <YAxis

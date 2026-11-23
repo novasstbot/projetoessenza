@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { ProductSearch } from "@/components/pdv/product-search";
 import { CartTable } from "@/components/pdv/cart-table";
@@ -31,11 +32,22 @@ export function PdvScreen({
   caixaAbertoEm: string;
 }) {
   const [items, setItems] = useState<CartItem[]>([]);
-  const [desconto, setDesconto] = useState(0);
+  const [descontoModo, setDescontoModo] = useState<"valor" | "percentual">("valor");
+  const [descontoValor, setDescontoValor] = useState(0);
+  const [descontoPercentual, setDescontoPercentual] = useState(0);
   const [paymentOpen, setPaymentOpen] = useState(false);
 
   const subtotal = items.reduce((sum, i) => sum + i.produto.preco_venda * i.quantidade, 0);
+  const desconto = Math.min(
+    descontoModo === "valor" ? descontoValor : (subtotal * descontoPercentual) / 100,
+    subtotal,
+  );
   const total = Math.max(subtotal - desconto, 0);
+
+  function resetDesconto() {
+    setDescontoValor(0);
+    setDescontoPercentual(0);
+  }
 
   function addProduto(produto: ProdutoPdv) {
     setItems((prev) => {
@@ -96,8 +108,39 @@ export function PdvScreen({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Desconto (R$)</Label>
-            <CurrencyInput value={desconto} onChange={setDesconto} />
+            <div className="flex items-center justify-between">
+              <Label>Desconto</Label>
+              <div className="flex gap-1">
+                <Button
+                  type="button"
+                  size="xs"
+                  variant={descontoModo === "valor" ? "default" : "outline"}
+                  onClick={() => setDescontoModo("valor")}
+                >
+                  R$
+                </Button>
+                <Button
+                  type="button"
+                  size="xs"
+                  variant={descontoModo === "percentual" ? "default" : "outline"}
+                  onClick={() => setDescontoModo("percentual")}
+                >
+                  %
+                </Button>
+              </div>
+            </div>
+            {descontoModo === "valor" ? (
+              <CurrencyInput value={descontoValor} onChange={setDescontoValor} />
+            ) : (
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                value={descontoPercentual}
+                onChange={(e) => setDescontoPercentual(Math.min(e.target.valueAsNumber || 0, 100))}
+              />
+            )}
           </div>
 
           <div className="mt-auto space-y-1 border-t border-border pt-4">
@@ -106,7 +149,12 @@ export function PdvScreen({
               <span>{formatCurrency(subtotal)}</span>
             </div>
             <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Desconto</span>
+              <span>
+                Desconto
+                {descontoModo === "percentual" && descontoPercentual > 0
+                  ? ` (${descontoPercentual}%)`
+                  : ""}
+              </span>
               <span>-{formatCurrency(desconto)}</span>
             </div>
             <div className="flex justify-between text-lg font-semibold text-foreground">
@@ -135,7 +183,7 @@ export function PdvScreen({
         clientes={clientes}
         onSuccess={() => {
           setItems([]);
-          setDesconto(0);
+          resetDesconto();
           setPaymentOpen(false);
         }}
       />

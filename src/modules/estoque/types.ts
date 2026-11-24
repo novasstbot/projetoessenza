@@ -6,9 +6,14 @@ export type ProdutoComEstoque = {
   nome: string;
   codigo_interno: string;
   estoque_minimo: number;
+  validade: string | null;
   quantidade_atual: number;
   tem_movimentacao: boolean;
 };
+
+// Quantos dias antes do vencimento um produto já conta como "próximo da
+// validade". Fixo por enquanto — vira configurável em Configurações depois.
+export const DIAS_PROXIMO_DA_VALIDADE = 30;
 
 export type Movimentacao = {
   id: string;

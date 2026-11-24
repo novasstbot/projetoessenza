@@ -15,6 +15,7 @@ function normalize(values: ProdutoFormValues) {
     custo: values.custo,
     preco_venda: values.preco_venda,
     estoque_minimo: values.estoque_minimo,
+    validade: values.validade || null,
   };
 }
 

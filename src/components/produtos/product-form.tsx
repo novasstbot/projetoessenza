@@ -48,6 +48,7 @@ export function ProductForm({ categorias, marcas, produto, onSuccess }: ProductF
       custo: produto?.custo ?? 0,
       preco_venda: produto?.preco_venda ?? 0,
       estoque_minimo: produto?.estoque_minimo ?? 0,
+      validade: produto?.validade ?? "",
     },
   });
 
@@ -241,6 +242,20 @@ export function ProductForm({ categorias, marcas, produto, onSuccess }: ProductF
             )}
           />
         </div>
+
+        <FormField
+          control={form.control}
+          name="validade"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Validade (opcional)</FormLabel>
+              <FormControl>
+                <Input type="date" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         {margem !== null && (
           <p className="text-sm text-muted-foreground">

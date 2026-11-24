@@ -18,6 +18,7 @@ export type Produto = {
   custo: number;
   preco_venda: number;
   estoque_minimo: number;
+  validade: string | null;
   ativo: boolean;
   created_at: string;
   categorias: Categoria | null;

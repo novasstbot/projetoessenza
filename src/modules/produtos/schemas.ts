@@ -13,6 +13,7 @@ export const produtoSchema = z.object({
   custo: z.number().min(0, "Custo não pode ser negativo"),
   preco_venda: z.number().min(0, "Preço não pode ser negativo"),
   estoque_minimo: z.number().int().min(0, "Estoque mínimo não pode ser negativo"),
+  validade: z.string().optional().or(z.literal("")),
 });
 
 export type ProdutoFormValues = z.infer<typeof produtoSchema>;

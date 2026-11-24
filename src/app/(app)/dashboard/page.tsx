@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   DollarSign,
   ShoppingCart,
@@ -200,89 +201,99 @@ export default async function DashboardPage() {
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-4">
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <AlertTriangle className="size-4 text-gold" />
-              Abaixo do estoque mínimo
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {abaixoDoMinimo.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum produto abaixo do mínimo.</p>
-            ) : (
-              abaixoDoMinimo.map((item) => (
-                <div key={item.id} className="text-sm">
-                  <p className="text-foreground">{item.nome}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {item.quantidade_atual} em estoque (mínimo {item.estoque_minimo})
-                  </p>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <PackageX className="size-4 text-gold" />
-              Sem movimentação
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {semMovimentacao.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Todos os produtos já tiveram movimentação.</p>
-            ) : (
-              semMovimentacao.map((item) => (
-                <p key={item.id} className="text-sm text-foreground">
-                  {item.nome}
-                </p>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <CalendarClock className="size-4 text-gold" />
-              Contas próximas do vencimento
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {contasVencendo.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nada vencendo nos próximos 7 dias.</p>
-            ) : (
-              contasVencendo.map((conta) => (
-                <div key={`${conta.tipo}-${conta.id}`} className="text-sm">
-                  <div className="flex items-center justify-between">
-                    <p className="text-foreground">{conta.descricao}</p>
-                    <Badge variant={conta.tipo === "pagar" ? "outline" : "secondary"}>
-                      {conta.tipo === "pagar" ? "A pagar" : "A receber"}
-                    </Badge>
+        <Link href="/estoque" className="lg:col-span-1">
+          <Card className="h-full transition-colors hover:border-gold/60">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <AlertTriangle className="size-4 text-gold" />
+                Abaixo do estoque mínimo
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {abaixoDoMinimo.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum produto abaixo do mínimo.</p>
+              ) : (
+                abaixoDoMinimo.map((item) => (
+                  <div key={item.id} className="text-sm">
+                    <p className="text-foreground">{item.nome}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.quantidade_atual} em estoque (mínimo {item.estoque_minimo})
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Vence em {formatDataBr(conta.vencimento)} — {formatCurrency(conta.valor)}
-                  </p>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Mail className="size-4 text-gold" />
-              Marketing por e-mail
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold text-foreground">{emailsSentCount ?? 0}</p>
-            <p className="text-xs text-muted-foreground">e-mails registrados até agora</p>
-          </CardContent>
-        </Card>
+        <Link href="/estoque" className="lg:col-span-1">
+          <Card className="h-full transition-colors hover:border-gold/60">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <PackageX className="size-4 text-gold" />
+                Sem movimentação
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {semMovimentacao.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Todos os produtos já tiveram movimentação.
+                </p>
+              ) : (
+                semMovimentacao.map((item) => (
+                  <p key={item.id} className="text-sm text-foreground">
+                    {item.nome}
+                  </p>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/financeiro" className="lg:col-span-1">
+          <Card className="h-full transition-colors hover:border-gold/60">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CalendarClock className="size-4 text-gold" />
+                Contas próximas do vencimento
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {contasVencendo.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nada vencendo nos próximos 7 dias.</p>
+              ) : (
+                contasVencendo.map((conta) => (
+                  <div key={`${conta.tipo}-${conta.id}`} className="text-sm">
+                    <div className="flex items-center justify-between">
+                      <p className="text-foreground">{conta.descricao}</p>
+                      <Badge variant={conta.tipo === "pagar" ? "outline" : "secondary"}>
+                        {conta.tipo === "pagar" ? "A pagar" : "A receber"}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Vence em {formatDataBr(conta.vencimento)} — {formatCurrency(conta.valor)}
+                    </p>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/marketing" className="lg:col-span-1">
+          <Card className="h-full transition-colors hover:border-gold/60">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Mail className="size-4 text-gold" />
+                Marketing por e-mail
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-semibold text-foreground">{emailsSentCount ?? 0}</p>
+              <p className="text-xs text-muted-foreground">e-mails registrados até agora</p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </div>
   );

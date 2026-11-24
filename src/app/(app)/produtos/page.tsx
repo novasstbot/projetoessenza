@@ -13,7 +13,7 @@ export default async function ProdutosPage() {
     supabase
       .from("produtos")
       .select(
-        "id, nome, codigo_interno, codigo_ean, categoria_id, marca_id, custo, preco_venda, estoque_minimo, ativo, created_at, categorias(id, nome), marcas(id, nome)",
+        "id, nome, codigo_interno, codigo_ean, categoria_id, marca_id, custo, preco_venda, estoque_minimo, validade, ativo, created_at, categorias(id, nome), marcas(id, nome)",
       )
       .order("nome"),
     supabase.from("categorias").select("id, nome").order("nome"),

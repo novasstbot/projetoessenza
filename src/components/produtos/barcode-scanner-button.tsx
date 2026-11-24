@@ -31,9 +31,11 @@ const FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"];
 
 // No celular, a câmera traseira costuma abrir no ângulo mais aberto e só
 // focaliza de uma certa distância em diante — perto demais, o código de
-// barras fica borrado. Um zoom digital inicial compensa isso: o código fica
-// grande no quadro sem precisar aproximar além da distância mínima de foco.
-const ZOOM_INICIAL_RATIO = 0.4;
+// barras fica borrado. Um zoom digital leve compensa isso: o código fica
+// maior no quadro sem precisar aproximar além da distância mínima de foco.
+// Um incremento fixo (em vez de uma fração do range) evita exagerar em
+// celulares cujo "zoom" vai muito além de 1x-8x.
+const ZOOM_INICIAL_INCREMENTO = 1;
 
 // Só a região dentro do guia visual é escaneada — evita pegar outro código
 // de barras que esteja por perto, fora do quadro.
@@ -133,7 +135,7 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
         if (capabilities?.zoom) {
           const { min, max, step } = capabilities.zoom;
           zoomRangeRef.current = { min, max, step };
-          applyZoom(min + (max - min) * ZOOM_INICIAL_RATIO);
+          applyZoom(min + ZOOM_INICIAL_INCREMENTO);
         }
 
         if (videoRef.current) {
@@ -236,11 +238,16 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
             <p className="py-6 text-center text-sm text-destructive">{error}</p>
           ) : (
             <div
-              className="relative overflow-hidden rounded-lg bg-black"
+              className="relative aspect-video w-full overflow-hidden rounded-lg bg-black"
               onClick={tryFocus}
               role="presentation"
             >
-              <video ref={videoRef} className="aspect-video w-full" muted playsInline />
+              <video
+                ref={videoRef}
+                className="h-full w-full object-cover"
+                muted
+                playsInline
+              />
               <canvas ref={canvasRef} className="hidden" />
               <div
                 className="pointer-events-none absolute rounded-lg border-2 border-gold"

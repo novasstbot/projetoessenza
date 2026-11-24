@@ -7,9 +7,11 @@ import {
   contaPagarSchema,
   contaReceberSchema,
   baixarContaSchema,
+  estornoSchema,
   type ContaPagarFormValues,
   type ContaReceberFormValues,
   type BaixarContaFormValues,
+  type EstornoFormValues,
 } from "@/modules/financeiro/schemas";
 
 export async function criarContaPagar(values: ContaPagarFormValues) {
@@ -98,6 +100,40 @@ export async function baixarContaReceber(contaId: string, values: BaixarContaFor
   const { error } = await supabase.rpc("baixar_conta_receber", {
     p_conta_receber_id: contaId,
     p_conta_financeira_id: parsed.contaFinanceiraId,
+  });
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/financeiro");
+  revalidatePath("/caixa");
+  revalidatePath("/dashboard");
+}
+
+export async function estornarBaixaContaPagar(contaId: string, values: EstornoFormValues) {
+  await requireRole(["admin", "gerente"]);
+  const parsed = estornoSchema.parse(values);
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("estornar_baixa_conta_pagar", {
+    p_conta_pagar_id: contaId,
+    p_motivo: parsed.motivo,
+  });
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/financeiro");
+  revalidatePath("/caixa");
+  revalidatePath("/dashboard");
+}
+
+export async function estornarBaixaContaReceber(contaId: string, values: EstornoFormValues) {
+  await requireRole(["admin", "gerente"]);
+  const parsed = estornoSchema.parse(values);
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("estornar_baixa_conta_receber", {
+    p_conta_receber_id: contaId,
+    p_motivo: parsed.motivo,
   });
 
   if (error) throw new Error(error.message);

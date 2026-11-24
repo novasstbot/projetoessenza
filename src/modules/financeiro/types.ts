@@ -61,6 +61,8 @@ export type MovimentacaoCaixaDetalhe = {
   profiles: { full_name: string | null } | null;
   autorizado_por_profile: { full_name: string | null } | null;
   contraparte: string | null;
+  estorno_de_id: string | null;
+  estornada: boolean;
 };
 
 export type ContaPagarStatus = "pendente" | "pago" | "cancelado";

@@ -8,10 +8,12 @@ import {
   suprimentoSchema,
   despesaCaixaSchema,
   ajusteCaixaSchema,
+  estornoSchema,
   type SangriaFormValues,
   type SuprimentoFormValues,
   type DespesaCaixaFormValues,
   type AjusteCaixaFormValues,
+  type EstornoFormValues,
 } from "@/modules/financeiro/schemas";
 
 export async function registrarSangria(caixaId: string, values: SangriaFormValues) {
@@ -84,10 +86,16 @@ export async function getDetalhesCaixa(caixaId: string) {
 
   const { data: movimentos, error: movError } = await supabase
     .from("movimentacoes_caixa")
-    .select("id, tipo, categoria, valor, descricao, created_at, user_id, autorizado_por")
+    .select(
+      "id, tipo, categoria, valor, descricao, created_at, user_id, autorizado_por, estorno_de_id",
+    )
     .eq("caixa_id", caixaId)
     .order("created_at", { ascending: true });
   if (movError) throw new Error(movError.message);
+
+  const estornadasIds = new Set(
+    (movimentos ?? []).map((m) => m.estorno_de_id).filter((id): id is string => id !== null),
+  );
 
   const userIds = [
     ...new Set((movimentos ?? []).flatMap((m) => [m.user_id, m.autorizado_por].filter(Boolean))),
@@ -126,9 +134,26 @@ export async function getDetalhesCaixa(caixaId: string) {
       ? { full_name: perfilPorId.get(m.autorizado_por) ?? null }
       : null,
     contraparte: contrapartePorMovId.get(m.id) ?? null,
+    estorno_de_id: m.estorno_de_id,
+    estornada: estornadasIds.has(m.id),
   }));
 
   return { caixa, movimentos: movimentosDetalhados };
+}
+
+export async function estornarMovimentacaoCaixa(movimentacaoId: string, values: EstornoFormValues) {
+  await requireRole(["admin", "gerente"]);
+  const parsed = estornoSchema.parse(values);
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("estornar_movimentacao_caixa", {
+    p_movimentacao_id: movimentacaoId,
+    p_motivo: parsed.motivo,
+  });
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/caixa");
 }
 
 export async function registrarAjusteCaixa(caixaId: string, values: AjusteCaixaFormValues) {

@@ -144,7 +144,7 @@ export default async function CaixaPage() {
                   <SuprimentoDialog caixaId={aberto.id} contas={contasOrigemSuprimento as ContaFinanceira[]} />
                   <DespesaDialog caixaId={aberto.id} />
                   {canAjustar && <AjusteDialog caixaId={aberto.id} />}
-                  <DetalhesCaixaDialog caixaId={aberto.id} />
+                  <DetalhesCaixaDialog caixaId={aberto.id} canManage={canAjustar} />
                   <FechamentoDialog caixaId={aberto.id} esperado={esperadoAberto} />
                 </div>
               )}
@@ -233,7 +233,7 @@ export default async function CaixaPage() {
                           )}
                         </td>
                         <td className="px-4 py-2.5 text-right">
-                          <DetalhesCaixaDialog caixaId={c.id} compact />
+                          <DetalhesCaixaDialog caixaId={c.id} canManage={canAjustar} compact />
                         </td>
                       </tr>
                     );

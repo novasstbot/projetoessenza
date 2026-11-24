@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { BaixarContaDialog } from "@/components/financeiro/baixar-conta-dialog";
+import { EstornarBaixaDialog } from "@/components/financeiro/estornar-baixa-dialog";
 import type { ContaFinanceira, ContaPagar } from "@/modules/financeiro/types";
 
 function formatCurrency(value: number) {
@@ -73,6 +74,9 @@ export function ContasPagarTable({
                           tipo="pagar"
                           contasFinanceiras={contasFinanceiras}
                         />
+                      )}
+                      {conta.status === "pago" && (
+                        <EstornarBaixaDialog contaId={conta.id} tipo="pagar" />
                       )}
                     </td>
                   )}

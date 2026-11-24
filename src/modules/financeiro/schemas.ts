@@ -56,3 +56,8 @@ export const baixarContaSchema = z.object({
   contaFinanceiraId: z.string().uuid("Selecione a conta financeira"),
 });
 export type BaixarContaFormValues = z.infer<typeof baixarContaSchema>;
+
+export const estornoSchema = z.object({
+  motivo: z.string().min(3, "Descreva o motivo"),
+});
+export type EstornoFormValues = z.infer<typeof estornoSchema>;

@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { BaixarContaDialog } from "@/components/financeiro/baixar-conta-dialog";
+import { EstornarBaixaDialog } from "@/components/financeiro/estornar-baixa-dialog";
 import type { ContaFinanceira, ContaReceber } from "@/modules/financeiro/types";
 
 function formatCurrency(value: number) {
@@ -73,6 +74,9 @@ export function ContasReceberTable({
                           tipo="receber"
                           contasFinanceiras={contasFinanceiras}
                         />
+                      )}
+                      {conta.status === "recebido" && (
+                        <EstornarBaixaDialog contaId={conta.id} tipo="receber" />
                       )}
                     </td>
                   )}

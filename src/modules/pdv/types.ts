@@ -34,6 +34,7 @@ export type VendaCaixa = {
   id: string;
   total: number;
   desconto: number;
+  status: "concluida" | "cancelada";
   created_at: string;
   customers: { full_name: string } | null;
   itens_venda: ItemVendaCaixa[];

@@ -35,7 +35,9 @@ export type MovimentacaoCategoria =
   | "despesa"
   | "devolucao"
   | "ajuste"
-  | "transferencia";
+  | "transferencia"
+  | "pagamento"
+  | "recebimento";
 
 export const movimentacaoCategoriaLabels: Record<MovimentacaoCategoria, string> = {
   venda: "Venda",
@@ -45,6 +47,8 @@ export const movimentacaoCategoriaLabels: Record<MovimentacaoCategoria, string> 
   devolucao: "Devolução",
   ajuste: "Ajuste",
   transferencia: "Transferência",
+  pagamento: "Pagamento",
+  recebimento: "Recebimento",
 };
 
 export type MovimentacaoCaixaDetalhe = {
@@ -57,6 +61,31 @@ export type MovimentacaoCaixaDetalhe = {
   profiles: { full_name: string | null } | null;
   autorizado_por_profile: { full_name: string | null } | null;
   contraparte: string | null;
+};
+
+export type ContaPagarStatus = "pendente" | "pago" | "cancelado";
+
+export type ContaPagar = {
+  id: string;
+  descricao: string;
+  categoria: string;
+  valor: number;
+  vencimento: string;
+  status: ContaPagarStatus;
+  pago_em: string | null;
+  fornecedores: { nome: string } | null;
+};
+
+export type ContaReceberStatus = "pendente" | "recebido" | "cancelado";
+
+export type ContaReceber = {
+  id: string;
+  descricao: string;
+  valor: number;
+  vencimento: string;
+  status: ContaReceberStatus;
+  recebido_em: string | null;
+  customers: { full_name: string } | null;
 };
 
 export type CaixaDetalhe = {

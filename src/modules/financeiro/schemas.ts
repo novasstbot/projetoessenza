@@ -34,3 +34,25 @@ export const fecharCaixaSchema = z.object({
   observacao: z.string().optional(),
 });
 export type FecharCaixaValues = z.infer<typeof fecharCaixaSchema>;
+
+export const contaPagarSchema = z.object({
+  descricao: z.string().min(3, "Descreva a conta"),
+  categoria: z.string().min(2, "Informe a categoria"),
+  valor: z.number().positive("Informe um valor maior que zero"),
+  vencimento: z.string().min(1, "Informe o vencimento"),
+  fornecedorId: z.string().uuid().optional().or(z.literal("")),
+});
+export type ContaPagarFormValues = z.infer<typeof contaPagarSchema>;
+
+export const contaReceberSchema = z.object({
+  descricao: z.string().min(3, "Descreva a conta"),
+  valor: z.number().positive("Informe um valor maior que zero"),
+  vencimento: z.string().min(1, "Informe o vencimento"),
+  clienteId: z.string().uuid().optional().or(z.literal("")),
+});
+export type ContaReceberFormValues = z.infer<typeof contaReceberSchema>;
+
+export const baixarContaSchema = z.object({
+  contaFinanceiraId: z.string().uuid("Selecione a conta financeira"),
+});
+export type BaixarContaFormValues = z.infer<typeof baixarContaSchema>;

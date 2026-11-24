@@ -45,6 +45,8 @@ function NovaCompraForm({
   const router = useRouter();
   const [fornecedorId, setFornecedorId] = useState(fornecedores[0]?.id ?? "");
   const [observacao, setObservacao] = useState("");
+  const [formaPagamento, setFormaPagamento] = useState<"a_vista" | "a_prazo">("a_vista");
+  const [vencimentoPagamento, setVencimentoPagamento] = useState("");
   const [items, setItems] = useState<Item[]>([]);
   const [term, setTerm] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -86,12 +88,18 @@ function NovaCompraForm({
       toast.error("Adicione ao menos um item.");
       return;
     }
+    if (formaPagamento === "a_prazo" && !vencimentoPagamento) {
+      toast.error("Informe o vencimento da compra a prazo.");
+      return;
+    }
 
     setSubmitting(true);
     try {
       await criarCompra({
         fornecedor_id: fornecedorId,
         observacao,
+        formaPagamento,
+        vencimentoPagamento,
         itens: items.map((i) => ({
           produto_id: i.produto.id,
           quantidade: i.quantidade,
@@ -186,6 +194,42 @@ function NovaCompraForm({
               </Button>
             </div>
           ))}
+        </div>
+      )}
+
+      <div className="space-y-1.5">
+        <Label>Forma de pagamento</Label>
+        <div className="flex gap-1">
+          <Button
+            type="button"
+            size="sm"
+            variant={formaPagamento === "a_vista" ? "default" : "outline"}
+            onClick={() => setFormaPagamento("a_vista")}
+          >
+            À vista
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={formaPagamento === "a_prazo" ? "default" : "outline"}
+            onClick={() => setFormaPagamento("a_prazo")}
+          >
+            A prazo
+          </Button>
+        </div>
+      </div>
+
+      {formaPagamento === "a_prazo" && (
+        <div className="space-y-1.5">
+          <Label>Vencimento</Label>
+          <Input
+            type="date"
+            value={vencimentoPagamento}
+            onChange={(e) => setVencimentoPagamento(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Gera uma conta a pagar automaticamente quando a compra for recebida.
+          </p>
         </div>
       )}
 

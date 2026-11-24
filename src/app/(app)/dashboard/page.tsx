@@ -6,7 +6,7 @@ import {
   AlertTriangle,
   PackageX,
   Mail,
-  FlaskConical,
+  CalendarClock,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { KpiCard } from "@/components/dashboard/kpi-card";
@@ -14,14 +14,6 @@ import { SalesChart } from "@/components/dashboard/sales-chart";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
-
-// Contas a pagar/receber ainda não existem (módulo Financeiro não foi
-// construído) — esta seção continua com dados fictícios, claramente
-// identificados, até lá.
-const demoAccountsDue = [
-  { description: "Fornecedor Aroma Distribuidora", dueDate: "25/11", amount: "R$ 3.200,00" },
-  { description: "Aluguel da loja", dueDate: "30/11", amount: "R$ 4.500,00" },
-];
 
 const weekdayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -56,11 +48,16 @@ export default async function DashboardPage() {
   const trintaCincoDiasAtras = new Date(now);
   trintaCincoDiasAtras.setDate(now.getDate() - 35);
 
+  const daquiSeteDias = new Date(now);
+  daquiSeteDias.setDate(now.getDate() + 7);
+
   const [
     { count: emailsSentCount },
     { data: vendasRecentes },
     { data: produtosAtivos },
     { data: estoqueAtual },
+    { data: contasPagarProximas },
+    { data: contasReceberProximas },
   ] = await Promise.all([
     supabase.from("email_logs").select("id", { count: "exact", head: true }),
     supabase
@@ -73,6 +70,20 @@ export default async function DashboardPage() {
       .order("created_at", { ascending: false }),
     supabase.from("produtos").select("id, nome, estoque_minimo").eq("ativo", true),
     supabase.from("estoque_atual").select("produto_id, quantidade_atual"),
+    supabase
+      .from("contas_pagar")
+      .select("id, descricao, valor, vencimento")
+      .eq("status", "pendente")
+      .lte("vencimento", daquiSeteDias.toISOString().slice(0, 10))
+      .order("vencimento")
+      .limit(5),
+    supabase
+      .from("contas_receber")
+      .select("id, descricao, valor, vencimento")
+      .eq("status", "pendente")
+      .lte("vencimento", daquiSeteDias.toISOString().slice(0, 10))
+      .order("vencimento")
+      .limit(5),
   ]);
 
   const vendas = (vendasRecentes as unknown as VendaComItens[]) ?? [];
@@ -126,6 +137,17 @@ export default async function DashboardPage() {
     .filter((p) => p.tem_movimentacao && p.quantidade_atual < p.estoque_minimo)
     .slice(0, 5);
   const semMovimentacao = produtosComEstoque.filter((p) => !p.tem_movimentacao).slice(0, 5);
+
+  const contasVencendo = [
+    ...(contasPagarProximas ?? []).map((c) => ({ ...c, tipo: "pagar" as const })),
+    ...(contasReceberProximas ?? []).map((c) => ({ ...c, tipo: "receber" as const })),
+  ]
+    .sort((a, b) => a.vencimento.localeCompare(b.vencimento))
+    .slice(0, 5);
+
+  function formatDataBr(value: string) {
+    return new Date(value + "T00:00:00").toLocaleDateString("pt-BR");
+  }
 
   return (
     <div>
@@ -223,26 +245,29 @@ export default async function DashboardPage() {
 
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between gap-2 text-base">
-              <span>Contas próximas do vencimento</span>
-              <Badge variant="outline" className="gap-1 border-gold/40 bg-rose/40 text-plum">
-                <FlaskConical className="size-3" />
-                Fictício
-              </Badge>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CalendarClock className="size-4 text-gold" />
+              Contas próximas do vencimento
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <p className="mb-1 text-xs text-muted-foreground">
-              Módulo Financeiro ainda não foi construído.
-            </p>
-            {demoAccountsDue.map((account) => (
-              <div key={account.description} className="text-sm">
-                <p className="text-foreground">{account.description}</p>
-                <p className="text-xs text-muted-foreground">
-                  Vence em {account.dueDate} — {account.amount}
-                </p>
-              </div>
-            ))}
+            {contasVencendo.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nada vencendo nos próximos 7 dias.</p>
+            ) : (
+              contasVencendo.map((conta) => (
+                <div key={`${conta.tipo}-${conta.id}`} className="text-sm">
+                  <div className="flex items-center justify-between">
+                    <p className="text-foreground">{conta.descricao}</p>
+                    <Badge variant={conta.tipo === "pagar" ? "outline" : "secondary"}>
+                      {conta.tipo === "pagar" ? "A pagar" : "A receber"}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Vence em {formatDataBr(conta.vencimento)} — {formatCurrency(conta.valor)}
+                  </p>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
 

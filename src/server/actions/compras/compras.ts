@@ -16,6 +16,8 @@ export async function criarCompra(values: NovaCompraValues) {
     .insert({
       fornecedor_id: parsed.fornecedor_id,
       observacao: parsed.observacao || null,
+      forma_pagamento: parsed.formaPagamento,
+      vencimento_pagamento: parsed.vencimentoPagamento || null,
       user_id: profile.id,
     })
     .select("id")
@@ -61,6 +63,8 @@ export async function receberCompra(compraId: string) {
   revalidatePath("/compras");
   revalidatePath("/estoque");
   revalidatePath("/produtos");
+  revalidatePath("/financeiro");
+  revalidatePath("/dashboard");
 }
 
 export async function cancelarCompra(compraId: string) {

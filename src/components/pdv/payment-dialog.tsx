@@ -126,7 +126,6 @@ function NovoClienteForm({
                 <FormControl>
                   <Input type="email" placeholder="maria@email.com" {...field} />
                 </FormControl>
-                <FormMessage />
               </FormItem>
             )}
           />
@@ -144,6 +143,9 @@ function NovoClienteForm({
             )}
           />
         </div>
+        {form.formState.errors.email && (
+          <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>
+        )}
         <div className="flex gap-2 pt-1">
           <Button type="button" variant="ghost" size="sm" className="flex-1" onClick={onCancel}>
             Cancelar

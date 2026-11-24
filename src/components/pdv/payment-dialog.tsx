@@ -170,9 +170,9 @@ function PaymentForm({
       </div>
 
       {lines.map((line) => (
-        <div key={line.id} className="flex items-end gap-2">
+        <div key={line.id} className="flex items-start gap-2">
           <div className="flex-1 space-y-1.5">
-            <Label>Forma de pagamento</Label>
+            <Label className="block h-5 leading-5">Forma de pagamento</Label>
             <Select
               value={line.forma_pagamento_id}
               onValueChange={(value) => value && updateLine(line.id, { forma_pagamento_id: value })}
@@ -195,7 +195,7 @@ function PaymentForm({
             </Select>
           </div>
           <div className="w-32 space-y-1.5">
-            <Label>Valor</Label>
+            <Label className="block h-5 leading-5">Valor</Label>
             <CurrencyInput value={line.valor} onChange={(valor) => updateLine(line.id, { valor })} />
           </div>
           {lines.length > 1 && (
@@ -204,6 +204,7 @@ function PaymentForm({
               variant="ghost"
               size="icon-sm"
               aria-label="Remover forma de pagamento"
+              className="mt-7"
               onClick={() => removeLine(line.id)}
             >
               <Trash2 className="size-3.5 text-destructive" />

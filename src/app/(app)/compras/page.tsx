@@ -1,5 +1,5 @@
 import { PageHeader } from "@/components/layout/page-header";
-import { ComprasTable } from "@/components/compras/compras-table";
+import { ComprasList } from "@/components/compras/compras-list";
 import { NovaCompraDialog } from "@/components/compras/nova-compra-dialog";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/server/auth/session";
@@ -32,7 +32,11 @@ export default async function ComprasPage() {
           )
         }
       />
-      <ComprasTable compras={(compras as unknown as Compra[]) ?? []} canManage={canManage} />
+      <ComprasList
+        compras={(compras as unknown as Compra[]) ?? []}
+        fornecedores={fornecedores ?? []}
+        canManage={canManage}
+      />
     </div>
   );
 }

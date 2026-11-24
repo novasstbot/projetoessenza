@@ -18,6 +18,7 @@ export async function criarCompra(values: NovaCompraValues) {
       observacao: parsed.observacao || null,
       forma_pagamento: parsed.formaPagamento,
       vencimento_pagamento: parsed.vencimentoPagamento || null,
+      parcelas: parsed.formaPagamento === "a_prazo" ? parsed.parcelas : 1,
       user_id: profile.id,
     })
     .select("id")

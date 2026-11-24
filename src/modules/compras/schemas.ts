@@ -6,6 +6,7 @@ export const novaCompraSchema = z
     observacao: z.string().optional(),
     formaPagamento: z.enum(["a_vista", "a_prazo"]),
     vencimentoPagamento: z.string().optional().or(z.literal("")),
+    parcelas: z.number().int().min(1).max(10),
     itens: z
       .array(
         z.object({

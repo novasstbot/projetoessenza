@@ -47,6 +47,7 @@ function NovaCompraForm({
   const [observacao, setObservacao] = useState("");
   const [formaPagamento, setFormaPagamento] = useState<"a_vista" | "a_prazo">("a_vista");
   const [vencimentoPagamento, setVencimentoPagamento] = useState("");
+  const [parcelas, setParcelas] = useState(1);
   const [items, setItems] = useState<Item[]>([]);
   const [term, setTerm] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -100,6 +101,7 @@ function NovaCompraForm({
         observacao,
         formaPagamento,
         vencimentoPagamento,
+        parcelas,
         itens: items.map((i) => ({
           produto_id: i.produto.id,
           quantidade: i.quantidade,
@@ -220,15 +222,28 @@ function NovaCompraForm({
       </div>
 
       {formaPagamento === "a_prazo" && (
-        <div className="space-y-1.5">
-          <Label>Vencimento</Label>
-          <Input
-            type="date"
-            value={vencimentoPagamento}
-            onChange={(e) => setVencimentoPagamento(e.target.value)}
-          />
-          <p className="text-xs text-muted-foreground">
-            Gera uma conta a pagar automaticamente quando a compra for recebida.
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label>1º vencimento</Label>
+            <Input
+              type="date"
+              value={vencimentoPagamento}
+              onChange={(e) => setVencimentoPagamento(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Parcelas</Label>
+            <IntegerInput
+              min={1}
+              max={10}
+              value={parcelas}
+              onChange={(v) => setParcelas(Math.min(Math.max(v || 1, 1), 10))}
+            />
+          </div>
+          <p className="col-span-2 -mt-2 text-xs text-muted-foreground">
+            {parcelas > 1
+              ? `Gera ${parcelas} contas a pagar mensais a partir do 1º vencimento, quando a compra for recebida.`
+              : "Gera uma conta a pagar automaticamente quando a compra for recebida."}
           </p>
         </div>
       )}

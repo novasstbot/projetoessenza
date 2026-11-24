@@ -1,7 +1,8 @@
-// Camada de decodificação de código de barras, isolada da captura de câmera
-// (ver camera.ts). Hoje implementada com a API nativa BarcodeDetector; a
-// ideia de existir essa camada é permitir trocar o motor de leitura (ex.:
-// ZXing) no futuro sem precisar tocar no componente que controla a câmera.
+// Camada de decodificação de código de barras, isolada de como a imagem é
+// obtida (hoje, uma foto tirada pela câmera nativa do celular). Hoje
+// implementada com a API nativa BarcodeDetector; a ideia de existir essa
+// camada é permitir trocar o motor de leitura (ex.: ZXing) no futuro sem
+// precisar tocar em quem fornece a imagem.
 
 export type BarcodeDecoder = {
   readonly supportedFormats: string[];

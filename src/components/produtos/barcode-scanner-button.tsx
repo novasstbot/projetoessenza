@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ScanLine, X } from "lucide-react";
+import { ScanLine, X, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,7 +22,18 @@ declare global {
   }
 }
 
+type TrackCapabilitiesExt = MediaTrackCapabilities & {
+  focusMode?: string[];
+  zoom?: { min: number; max: number; step: number };
+};
+
 const FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"];
+
+// No celular, a câmera traseira costuma abrir no ângulo mais aberto e só
+// focaliza de uma certa distância em diante — perto demais, o código de
+// barras fica borrado. Um zoom digital inicial compensa isso: o código fica
+// grande no quadro sem precisar aproximar além da distância mínima de foco.
+const ZOOM_INICIAL_RATIO = 0.4;
 
 // Só a região dentro do guia visual é escaneada — evita pegar outro código
 // de barras que esteja por perto, fora do quadro.
@@ -57,13 +68,13 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
   const frameRef = useRef<number | null>(null);
   const lastCodeRef = useRef<string | null>(null);
   const stableCountRef = useRef(0);
+  const zoomRangeRef = useRef<{ min: number; max: number; step: number } | null>(null);
+  const [zoom, setZoom] = useState<number | null>(null);
 
   function tryFocus() {
     const track = trackRef.current;
     if (!track) return;
-    const capabilities = track.getCapabilities?.() as
-      | (MediaTrackCapabilities & { focusMode?: string[] })
-      | undefined;
+    const capabilities = track.getCapabilities?.() as TrackCapabilitiesExt | undefined;
     if (!capabilities?.focusMode?.includes("continuous")) return;
     track
       .applyConstraints({
@@ -72,12 +83,32 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
       .catch(() => {});
   }
 
+  function applyZoom(value: number) {
+    const track = trackRef.current;
+    const range = zoomRangeRef.current;
+    if (!track || !range) return;
+    const clamped = Math.min(range.max, Math.max(range.min, value));
+    track
+      .applyConstraints({ advanced: [{ zoom: clamped } as unknown as MediaTrackConstraintSet] })
+      .then(() => setZoom(clamped))
+      .catch(() => {});
+  }
+
+  function adjustZoom(direction: 1 | -1) {
+    const range = zoomRangeRef.current;
+    if (!range || zoom == null) return;
+    const step = range.step || (range.max - range.min) / 10 || 0.5;
+    applyZoom(zoom + direction * step);
+  }
+
   useEffect(() => {
     if (!open) return;
 
     let cancelled = false;
     lastCodeRef.current = null;
     stableCountRef.current = 0;
+    zoomRangeRef.current = null;
+    setZoom(null);
 
     async function start() {
       try {
@@ -95,6 +126,16 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
         streamRef.current = stream;
         trackRef.current = stream.getVideoTracks()[0] ?? null;
         tryFocus();
+
+        const capabilities = trackRef.current?.getCapabilities?.() as
+          | TrackCapabilitiesExt
+          | undefined;
+        if (capabilities?.zoom) {
+          const { min, max, step } = capabilities.zoom;
+          zoomRangeRef.current = { min, max, step };
+          applyZoom(min + (max - min) * ZOOM_INICIAL_RATIO);
+        }
+
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
@@ -187,8 +228,8 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
           <DialogHeader>
             <DialogTitle>Ler código de barras</DialogTitle>
             <DialogDescription>
-              Centralize o código de barras dentro da área marcada. Afaste um pouco a câmera até a
-              imagem ficar nítida — se não focar, toque na tela.
+              Centralize o código de barras dentro da área marcada. Se a imagem não focalizar,
+              toque na tela ou use os botões de zoom.
             </DialogDescription>
           </DialogHeader>
           {error ? (
@@ -210,6 +251,36 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
                   bottom: `${marginY}%`,
                 }}
               />
+              {zoom != null ? (
+                <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/60 px-2 py-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 text-white hover:bg-white/20 hover:text-white"
+                    aria-label="Diminuir zoom"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      adjustZoom(-1);
+                    }}
+                  >
+                    <ZoomOut className="size-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 text-white hover:bg-white/20 hover:text-white"
+                    aria-label="Aumentar zoom"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      adjustZoom(1);
+                    }}
+                  >
+                    <ZoomIn className="size-4" />
+                  </Button>
+                </div>
+              ) : null}
             </div>
           )}
           <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="gap-1.5">

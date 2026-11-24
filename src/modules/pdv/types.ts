@@ -23,12 +23,20 @@ export type ClientePdv = {
   cpf_cnpj: string | null;
 };
 
+export type ItemVendaCaixa = {
+  quantidade: number;
+  preco_unitario: number;
+  subtotal: number;
+  produtos: { nome: string } | null;
+};
+
 export type VendaCaixa = {
   id: string;
   total: number;
   desconto: number;
   created_at: string;
   customers: { full_name: string } | null;
+  itens_venda: ItemVendaCaixa[];
 };
 
 export type Caixa = {

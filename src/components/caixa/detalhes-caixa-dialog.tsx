@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Eye, ListTree, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { Eye, ListTree, ArrowDownCircle, ArrowUpCircle, Receipt } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,8 +12,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getDetalhesCaixa } from "@/server/actions/financeiro/caixa";
+import { getVendasCaixa } from "@/server/actions/pdv/vendas";
 import { movimentacaoCategoriaLabels } from "@/modules/financeiro/types";
 import type { CaixaDetalhe, MovimentacaoCaixaDetalhe } from "@/modules/financeiro/types";
+import type { VendaCaixa } from "@/modules/pdv/types";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -28,9 +30,12 @@ function DetalhesContent({ caixaId }: { caixaId: string }) {
     caixa: CaixaDetalhe;
     movimentos: MovimentacaoCaixaDetalhe[];
   } | null>(null);
+  const [vendas, setVendas] = useState<VendaCaixa[] | null>(null);
+  const [aba, setAba] = useState<"movimentacoes" | "vendas">("movimentacoes");
 
   useEffect(() => {
     getDetalhesCaixa(caixaId).then((data) => setDados(data as typeof dados));
+    getVendasCaixa(caixaId).then((data) => setVendas(data as unknown as VendaCaixa[]));
   }, [caixaId]);
 
   if (!dados) {
@@ -82,10 +87,26 @@ function DetalhesContent({ caixaId }: { caixaId: string }) {
         </div>
       )}
 
-      <div>
-        <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">
+      <div className="flex gap-1.5">
+        <Button
+          type="button"
+          variant={aba === "movimentacoes" ? "secondary" : "ghost"}
+          size="sm"
+          onClick={() => setAba("movimentacoes")}
+        >
           Movimentações ({movimentos.length})
-        </p>
+        </Button>
+        <Button
+          type="button"
+          variant={aba === "vendas" ? "secondary" : "ghost"}
+          size="sm"
+          onClick={() => setAba("vendas")}
+        >
+          Vendas ({vendas?.length ?? "…"})
+        </Button>
+      </div>
+
+      {aba === "movimentacoes" ? (
         <div className="max-h-96 divide-y divide-border overflow-y-auto">
           {movimentos.length === 0 ? (
             <p className="py-4 text-center text-sm text-muted-foreground">
@@ -126,7 +147,53 @@ function DetalhesContent({ caixaId }: { caixaId: string }) {
             ))
           )}
         </div>
-      </div>
+      ) : (
+        <div className="max-h-96 divide-y divide-border overflow-y-auto">
+          {vendas === null ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">Carregando...</p>
+          ) : vendas.length === 0 ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              Nenhuma venda registrada neste caixa.
+            </p>
+          ) : (
+            vendas.map((venda) => (
+              <div key={venda.id} className="py-2.5 text-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-2">
+                    <Receipt className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-foreground">
+                          {venda.customers?.full_name ?? "Venda avulsa"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDateTime(venda.created_at)}
+                        </span>
+                      </div>
+                      <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                        {venda.itens_venda.map((item, i) => (
+                          <li key={i}>
+                            {item.quantidade}× {item.produtos?.nome ?? "Produto removido"} —{" "}
+                            {formatCurrency(item.subtotal)}
+                          </li>
+                        ))}
+                      </ul>
+                      {venda.desconto > 0 && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Desconto: {formatCurrency(venda.desconto)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <span className="whitespace-nowrap font-medium text-foreground">
+                    {formatCurrency(venda.total)}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -145,20 +212,20 @@ export function DetalhesCaixaDialog({
       <DialogTrigger
         render={
           compact ? (
-            <Button variant="ghost" size="icon-sm" aria-label="Ver movimentações do caixa">
+            <Button variant="ghost" size="icon-sm" aria-label="Ver detalhes do caixa">
               <Eye className="size-4" />
             </Button>
           ) : (
             <Button variant="outline" size="sm" className="gap-1.5">
               <ListTree className="size-3.5" />
-              Movimentações
+              Detalhes
             </Button>
           )
         }
       />
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Movimentações do caixa</DialogTitle>
+          <DialogTitle>Detalhes do caixa</DialogTitle>
         </DialogHeader>
         {open && <DetalhesContent caixaId={caixaId} />}
       </DialogContent>

@@ -34,7 +34,9 @@ export async function getVendasCaixa(caixaId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("vendas")
-    .select("id, total, desconto, created_at, customers(full_name)")
+    .select(
+      "id, total, desconto, created_at, customers(full_name), itens_venda(quantidade, preco_unitario, subtotal, produtos(nome))",
+    )
     .eq("caixa_id", caixaId)
     .eq("status", "concluida")
     .order("created_at", { ascending: false });

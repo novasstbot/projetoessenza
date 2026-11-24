@@ -305,6 +305,20 @@ function DetalhesContent({ caixaId, canManage }: { caixaId: string; canManage: b
                             Desconto: {formatCurrency(venda.desconto)}
                           </p>
                         )}
+                        {venda.venda_pagamentos.length > 0 && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Pago:{" "}
+                            {venda.venda_pagamentos
+                              .map(
+                                (p, i) =>
+                                  `${p.formas_pagamento?.nome ?? "—"} ${formatCurrency(p.valor)}${
+                                    i < venda.venda_pagamentos.length - 1 ? " · " : ""
+                                  }`,
+                              )
+                              .join("")}
+                            {venda.status === "cancelada" && " (revertido no cancelamento)"}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">

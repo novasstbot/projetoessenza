@@ -30,6 +30,11 @@ export type ItemVendaCaixa = {
   produtos: { nome: string } | null;
 };
 
+export type PagamentoVendaCaixa = {
+  valor: number;
+  formas_pagamento: { nome: string } | null;
+};
+
 export type VendaCaixa = {
   id: string;
   total: number;
@@ -38,6 +43,7 @@ export type VendaCaixa = {
   created_at: string;
   customers: { full_name: string } | null;
   itens_venda: ItemVendaCaixa[];
+  venda_pagamentos: PagamentoVendaCaixa[];
 };
 
 export type Caixa = {

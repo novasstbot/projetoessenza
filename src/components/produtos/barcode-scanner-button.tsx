@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BarcodeFormat, DecodeHintType } from "@zxing/library";
-import { BrowserMultiFormatReader } from "@zxing/browser";
 import { ScanLine, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,24 +10,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-
-// Decodifica por software (ZXing) em vez de depender da API nativa
-// BarcodeDetector — que não existe no Safari/iOS e varia muito de
-// qualidade entre fabricantes Android. Assim funciona em qualquer
-// navegador com câmera, mesmo com a imagem um pouco fora de foco.
-const HINTS = new Map<DecodeHintType, unknown>([
-  [
-    DecodeHintType.POSSIBLE_FORMATS,
-    [
-      BarcodeFormat.EAN_13,
-      BarcodeFormat.EAN_8,
-      BarcodeFormat.UPC_A,
-      BarcodeFormat.UPC_E,
-      BarcodeFormat.CODE_128,
-    ],
-  ],
-  [DecodeHintType.TRY_HARDER, true],
-]);
+import {
+  enableContinuousFocus,
+  getEffectiveResolution,
+  startRearCamera,
+  type RearCamera,
+} from "@/lib/barcode/camera";
+import { createNativeBarcodeDecoder, type BarcodeDecoder } from "@/lib/barcode/decoder";
 
 // Só a região dentro do guia visual é escaneada — evita pegar outro código
 // de barras que esteja por perto, fora do quadro.
@@ -39,31 +26,22 @@ const CROP_HEIGHT_RATIO = 0.38;
 // falsos de um único frame borrado.
 const FRAMES_PARA_CONFIRMAR = 3;
 
-// Sem isso, alguns celulares não refocalizam depois do primeiro frame —
-// a câmera fica parada na distância em que abriu.
-function tryFocusContinuous(track: MediaStreamTrack | null) {
-  if (!track) return;
-  const capabilities = track.getCapabilities?.() as
-    | (MediaTrackCapabilities & { focusMode?: string[] })
-    | undefined;
-  if (!capabilities?.focusMode?.includes("continuous")) return;
-  track
-    .applyConstraints({
-      advanced: [{ focusMode: "continuous" } as unknown as MediaTrackConstraintSet],
-    })
-    .catch(() => {});
-}
-
 export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string) => void }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Diagnóstico temporário enquanto investigamos o foco da câmera — mostra
+  // a resolução efetiva do vídeo e os formatos de fato suportados.
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const cameraRef = useRef<RearCamera | null>(null);
   const frameRef = useRef<number | null>(null);
   const lastCodeRef = useRef<string | null>(null);
   const stableCountRef = useRef(0);
-  const readerRef = useRef<BrowserMultiFormatReader | null>(null);
+
+  function tryFocus() {
+    enableContinuousFocus(cameraRef.current?.track ?? null);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -71,39 +49,51 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
     let cancelled = false;
     lastCodeRef.current = null;
     stableCountRef.current = 0;
-    readerRef.current = new BrowserMultiFormatReader(HINTS);
 
     async function start() {
+      let decoder: BarcodeDecoder | null;
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "environment",
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-          },
-        });
+        decoder = await createNativeBarcodeDecoder();
+      } catch {
+        decoder = null;
+      }
+      if (cancelled) return;
+      if (!decoder) {
+        setError("Este navegador não tem leitura de código de barras (EAN) disponível.");
+        return;
+      }
+
+      try {
+        const camera = await startRearCamera();
         if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
+          camera.stop();
           return;
         }
-        streamRef.current = stream;
-        tryFocusContinuous(stream.getVideoTracks()[0] ?? null);
+        cameraRef.current = camera;
+        enableContinuousFocus(camera.track);
+
         if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+          videoRef.current.srcObject = camera.stream;
           await videoRef.current.play();
         }
 
-        const loop = () => {
+        const loop = async () => {
           const video = videoRef.current;
           const canvas = canvasRef.current;
-          const reader = readerRef.current;
-          if (!video || !canvas || !reader || cancelled) return;
+          if (!video || !canvas || cancelled) return;
 
           const vw = video.videoWidth;
           const vh = video.videoHeight;
           if (!vw || !vh) {
             frameRef.current = requestAnimationFrame(loop);
             return;
+          }
+
+          const resolucao = getEffectiveResolution(video);
+          if (resolucao) {
+            setDebugInfo(
+              `${resolucao.width}×${resolucao.height} · formatos: ${decoder!.supportedFormats.join(", ")}`,
+            );
           }
 
           const sw = vw * CROP_WIDTH_RATIO;
@@ -117,25 +107,22 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
           ctx?.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh);
 
           try {
-            const result = reader.decodeFromCanvas(canvas);
-            const value = result.getText();
+            const value = await decoder!.decode(canvas);
 
-            if (value === lastCodeRef.current) {
+            if (value && value === lastCodeRef.current) {
               stableCountRef.current += 1;
             } else {
               lastCodeRef.current = value;
-              stableCountRef.current = 1;
+              stableCountRef.current = value ? 1 : 0;
             }
 
-            if (stableCountRef.current >= FRAMES_PARA_CONFIRMAR) {
+            if (value && stableCountRef.current >= FRAMES_PARA_CONFIRMAR) {
               onDetected(value);
               setOpen(false);
               return;
             }
           } catch {
-            // nenhum código encontrado nesse frame — tenta de novo no próximo
-            lastCodeRef.current = null;
-            stableCountRef.current = 0;
+            // erros de decodificação pontuais são esperados entre frames
           }
           frameRef.current = requestAnimationFrame(loop);
         };
@@ -150,9 +137,8 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
     return () => {
       cancelled = true;
       if (frameRef.current) cancelAnimationFrame(frameRef.current);
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-      readerRef.current = null;
+      cameraRef.current?.stop();
+      cameraRef.current = null;
     };
   }, [open, onDetected]);
 
@@ -188,7 +174,7 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
           ) : (
             <div
               className="relative aspect-video w-full overflow-hidden rounded-lg bg-black"
-              onClick={() => tryFocusContinuous(streamRef.current?.getVideoTracks()[0] ?? null)}
+              onClick={tryFocus}
               role="presentation"
             >
               <video ref={videoRef} className="h-full w-full object-cover" muted playsInline />
@@ -202,6 +188,11 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
                   bottom: `${marginY}%`,
                 }}
               />
+              {debugInfo ? (
+                <p className="pointer-events-none absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white/80">
+                  {debugInfo}
+                </p>
+              ) : null}
             </div>
           )}
           <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="gap-1.5">

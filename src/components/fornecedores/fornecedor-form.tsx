@@ -5,6 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
+import { CnpjCpfInput } from "@/components/ui/cnpj-cpf-input";
 import {
   Form,
   FormControl,
@@ -73,7 +75,7 @@ export function FornecedorForm({
             <FormItem>
               <FormLabel>CNPJ / CPF</FormLabel>
               <FormControl>
-                <Input placeholder="00.000.000/0000-00" {...field} />
+                <CnpjCpfInput placeholder="00.000.000/0000-00" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -87,7 +89,7 @@ export function FornecedorForm({
               <FormItem>
                 <FormLabel>Telefone</FormLabel>
                 <FormControl>
-                  <Input placeholder="(00) 00000-0000" {...field} />
+                  <PhoneInput placeholder="(00) 00000-0000" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

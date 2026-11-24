@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { IntegerInput } from "@/components/ui/integer-input";
 import {
   Form,
   FormControl,
@@ -119,13 +120,7 @@ export function MovementForm({
               <FormItem>
                 <FormLabel>Quantidade</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    step="1"
-                    min="1"
-                    value={field.value}
-                    onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
-                  />
+                  <IntegerInput min={1} step={1} value={field.value} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

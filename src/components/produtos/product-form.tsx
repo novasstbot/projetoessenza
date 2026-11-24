@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { IntegerInput } from "@/components/ui/integer-input";
 import {
   Form,
   FormControl,
@@ -233,13 +234,7 @@ export function ProductForm({ categorias, marcas, produto, onSuccess }: ProductF
               <FormItem>
                 <FormLabel>Estoque mínimo</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    step="1"
-                    min="0"
-                    value={field.value}
-                    onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
-                  />
+                  <IntegerInput min={0} step={1} value={field.value} onChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

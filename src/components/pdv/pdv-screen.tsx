@@ -5,8 +5,8 @@ import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { IntegerInput } from "@/components/ui/integer-input";
 import { ProductSearch } from "@/components/pdv/product-search";
 import { CartTable } from "@/components/pdv/cart-table";
 import { PaymentDialog } from "@/components/pdv/payment-dialog";
@@ -128,13 +128,12 @@ export function PdvScreen({
             {descontoModo === "valor" ? (
               <CurrencyInput value={descontoValor} onChange={setDescontoValor} />
             ) : (
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                step="0.1"
+              <IntegerInput
+                min={0}
+                max={100}
+                step={0.1}
                 value={descontoPercentual}
-                onChange={(e) => setDescontoPercentual(Math.min(e.target.valueAsNumber || 0, 100))}
+                onChange={(v) => setDescontoPercentual(Math.min(v, 100))}
               />
             )}
           </div>

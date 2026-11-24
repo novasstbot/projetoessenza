@@ -100,6 +100,7 @@ function FechamentoForm({
                 min="0"
                 step="1"
                 value={contagem[String(d)] ?? ""}
+                onFocus={(e) => e.target.select()}
                 onChange={(e) =>
                   setContagem((prev) => ({ ...prev, [String(d)]: e.target.valueAsNumber || 0 }))
                 }

@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CurrencyInput } from "@/components/ui/currency-input";
+import { IntegerInput } from "@/components/ui/integer-input";
 import {
   Select,
   SelectContent,
@@ -162,13 +163,10 @@ function NovaCompraForm({
           {items.map((item) => (
             <div key={item.produto.id} className="flex items-center gap-2 p-2.5">
               <span className="flex-1 truncate text-sm text-foreground">{item.produto.nome}</span>
-              <Input
-                type="number"
-                min="1"
+              <IntegerInput
+                min={1}
                 value={item.quantidade}
-                onChange={(e) =>
-                  updateItem(item.produto.id, { quantidade: e.target.valueAsNumber || 1 })
-                }
+                onChange={(v) => updateItem(item.produto.id, { quantidade: v || 1 })}
                 className="w-16"
               />
               <div className="w-28">

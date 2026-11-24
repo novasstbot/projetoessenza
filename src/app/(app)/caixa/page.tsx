@@ -10,6 +10,7 @@ import { SuprimentoDialog } from "@/components/caixa/suprimento-dialog";
 import { DespesaDialog } from "@/components/caixa/despesa-dialog";
 import { AjusteDialog } from "@/components/caixa/ajuste-dialog";
 import { FechamentoDialog } from "@/components/caixa/fechamento-dialog";
+import { DetalhesCaixaDialog } from "@/components/caixa/detalhes-caixa-dialog";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/server/auth/session";
 import type { ContaFinanceira } from "@/modules/financeiro/types";
@@ -143,6 +144,7 @@ export default async function CaixaPage() {
                   <SuprimentoDialog caixaId={aberto.id} contas={contasOrigemSuprimento as ContaFinanceira[]} />
                   <DespesaDialog caixaId={aberto.id} />
                   {canAjustar && <AjusteDialog caixaId={aberto.id} />}
+                  <DetalhesCaixaDialog caixaId={aberto.id} />
                   <FechamentoDialog caixaId={aberto.id} esperado={esperadoAberto} />
                 </div>
               )}
@@ -180,12 +182,13 @@ export default async function CaixaPage() {
                   <th className="px-4 py-2.5 font-medium">Esperado</th>
                   <th className="px-4 py-2.5 font-medium">Informado</th>
                   <th className="px-4 py-2.5 font-medium">Diferença</th>
+                  <th className="px-4 py-2.5 font-medium text-right">Detalhes</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {!fechados || fechados.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
+                    <td colSpan={7} className="px-4 py-10 text-center text-muted-foreground">
                       Nenhum caixa fechado ainda.
                     </td>
                   </tr>
@@ -228,6 +231,9 @@ export default async function CaixaPage() {
                               {diferenca < 0 ? " (furo)" : " (sobra)"}
                             </Badge>
                           )}
+                        </td>
+                        <td className="px-4 py-2.5 text-right">
+                          <DetalhesCaixaDialog caixaId={c.id} compact />
                         </td>
                       </tr>
                     );

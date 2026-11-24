@@ -68,6 +68,69 @@ export async function registrarDespesaCaixa(caixaId: string, values: DespesaCaix
   revalidatePath("/pdv");
 }
 
+export async function getDetalhesCaixa(caixaId: string) {
+  await requireRole(["admin", "gerente", "vendedor"]);
+
+  const supabase = await createClient();
+
+  const { data: caixa, error: caixaError } = await supabase
+    .from("caixas")
+    .select(
+      "id, status, valor_abertura, aberto_em, fechado_em, valor_fechamento_informado, observacao_fechamento, contagem_cedulas",
+    )
+    .eq("id", caixaId)
+    .single();
+  if (caixaError) throw new Error(caixaError.message);
+
+  const { data: movimentos, error: movError } = await supabase
+    .from("movimentacoes_caixa")
+    .select("id, tipo, categoria, valor, descricao, created_at, user_id, autorizado_por")
+    .eq("caixa_id", caixaId)
+    .order("created_at", { ascending: true });
+  if (movError) throw new Error(movError.message);
+
+  const userIds = [
+    ...new Set((movimentos ?? []).flatMap((m) => [m.user_id, m.autorizado_por].filter(Boolean))),
+  ] as string[];
+
+  const { data: perfis } =
+    userIds.length > 0
+      ? await supabase.from("profiles").select("id, full_name").in("id", userIds)
+      : { data: [] };
+  const perfilPorId = new Map((perfis ?? []).map((p) => [p.id, p.full_name]));
+
+  const movIds = (movimentos ?? []).map((m) => m.id);
+  const { data: contrapartes } =
+    movIds.length > 0
+      ? await supabase
+          .from("movimentacoes_financeiras")
+          .select("movimentacao_caixa_id, tipo, contas_financeiras(nome)")
+          .in("movimentacao_caixa_id", movIds)
+      : { data: [] };
+  const contrapartePorMovId = new Map(
+    (contrapartes ?? []).map((c) => [
+      c.movimentacao_caixa_id,
+      `${c.tipo === "entrada" ? "veio de" : "foi para"} ${(c.contas_financeiras as unknown as { nome: string } | null)?.nome ?? "—"}`,
+    ]),
+  );
+
+  const movimentosDetalhados = (movimentos ?? []).map((m) => ({
+    id: m.id,
+    tipo: m.tipo,
+    categoria: m.categoria,
+    valor: m.valor,
+    descricao: m.descricao,
+    created_at: m.created_at,
+    profiles: { full_name: perfilPorId.get(m.user_id) ?? null },
+    autorizado_por_profile: m.autorizado_por
+      ? { full_name: perfilPorId.get(m.autorizado_por) ?? null }
+      : null,
+    contraparte: contrapartePorMovId.get(m.id) ?? null,
+  }));
+
+  return { caixa, movimentos: movimentosDetalhados };
+}
+
 export async function registrarAjusteCaixa(caixaId: string, values: AjusteCaixaFormValues) {
   await requireRole(["admin", "gerente"]);
   const parsed = ajusteCaixaSchema.parse(values);

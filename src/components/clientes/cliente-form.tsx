@@ -84,9 +84,6 @@ export function ClienteForm({
             </FormItem>
           )}
         />
-        <p className="-mt-2 text-xs text-muted-foreground">
-          Informe pelo menos e-mail ou telefone.
-        </p>
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}

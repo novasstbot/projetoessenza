@@ -144,7 +144,6 @@ function NovoClienteForm({
             )}
           />
         </div>
-        <p className="text-xs text-muted-foreground">Informe e-mail ou telefone.</p>
         <div className="flex gap-2 pt-1">
           <Button type="button" variant="ghost" size="sm" className="flex-1" onClick={onCancel}>
             Cancelar

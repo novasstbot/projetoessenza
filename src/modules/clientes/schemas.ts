@@ -4,7 +4,7 @@ function requireEmailOrPhone(data: { email?: string; phone?: string }, ctx: z.Re
   if (!data.email && !data.phone) {
     ctx.addIssue({
       code: "custom",
-      message: "Informe e-mail ou telefone",
+      message: "Informe pelo menos e-mail ou telefone",
       path: ["email"],
     });
   }

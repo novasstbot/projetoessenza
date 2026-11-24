@@ -22,8 +22,8 @@ export function ContasPagarTable({
   const hoje = new Date().toISOString().slice(0, 10);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border">
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto rounded-lg border border-border">
+      <table className="w-full min-w-max text-sm">
         <thead className="bg-muted text-left text-xs uppercase text-muted-foreground">
           <tr>
             <th className="px-4 py-2.5 font-medium">Descrição</th>

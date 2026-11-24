@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ScanLine, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Focus, Minus, Plus, ScanLine, X, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -73,37 +73,45 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
   const stableCountRef = useRef(0);
   const zoomRangeRef = useRef<{ min: number; max: number; step: number } | null>(null);
   const [zoom, setZoom] = useState<number | null>(null);
+  const focusRangeRef = useRef<{ min: number; max: number; step: number } | null>(null);
+  const [focusDistance, setFocusDistance] = useState<number | null>(null);
 
+  // Toque na tela: só é útil quando não há controle manual de foco (a
+  // direção "perto"/"longe" da distância manual varia por aparelho, então
+  // ela é ajustada pelos botões, não adivinhada aqui).
   function tryFocus() {
+    if (focusRangeRef.current) return;
     const track = trackRef.current;
     if (!track) return;
     const capabilities = track.getCapabilities?.() as TrackCapabilitiesExt | undefined;
-    if (!capabilities) return;
+    if (!capabilities?.focusMode?.includes("continuous")) return;
+    track
+      .applyConstraints({
+        advanced: [{ focusMode: "continuous" } as unknown as MediaTrackConstraintSet],
+      })
+      .catch(() => {});
+  }
 
-    // "continuous" sozinho raramente foca em algo tão próximo quanto um
-    // código de barras — o foco manual fixado na distância mínima força o
-    // comportamento de macro que esse caso precisa.
-    if (capabilities.focusMode?.includes("manual") && capabilities.focusDistance) {
-      track
-        .applyConstraints({
-          advanced: [
-            {
-              focusMode: "manual",
-              focusDistance: capabilities.focusDistance.min,
-            } as unknown as MediaTrackConstraintSet,
-          ],
-        })
-        .catch(() => {});
-      return;
-    }
+  function applyFocusDistance(value: number) {
+    const track = trackRef.current;
+    const range = focusRangeRef.current;
+    if (!track || !range) return;
+    const clamped = Math.min(range.max, Math.max(range.min, value));
+    track
+      .applyConstraints({
+        advanced: [
+          { focusMode: "manual", focusDistance: clamped } as unknown as MediaTrackConstraintSet,
+        ],
+      })
+      .then(() => setFocusDistance(clamped))
+      .catch(() => {});
+  }
 
-    if (capabilities.focusMode?.includes("continuous")) {
-      track
-        .applyConstraints({
-          advanced: [{ focusMode: "continuous" } as unknown as MediaTrackConstraintSet],
-        })
-        .catch(() => {});
-    }
+  function adjustFocus(direction: 1 | -1) {
+    const range = focusRangeRef.current;
+    if (!range || focusDistance == null) return;
+    const step = range.step || (range.max - range.min) / 10 || 0.1;
+    applyFocusDistance(focusDistance + direction * step);
   }
 
   function applyZoom(value: number) {
@@ -132,6 +140,8 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
     stableCountRef.current = 0;
     zoomRangeRef.current = null;
     setZoom(null);
+    focusRangeRef.current = null;
+    setFocusDistance(null);
 
     async function start() {
       try {
@@ -148,11 +158,19 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
         }
         streamRef.current = stream;
         trackRef.current = stream.getVideoTracks()[0] ?? null;
-        tryFocus();
 
         const capabilities = trackRef.current?.getCapabilities?.() as
           | TrackCapabilitiesExt
           | undefined;
+
+        if (capabilities?.focusMode?.includes("manual") && capabilities.focusDistance) {
+          const { min, max, step } = capabilities.focusDistance;
+          focusRangeRef.current = { min, max, step };
+          applyFocusDistance(min + (max - min) / 2);
+        } else {
+          tryFocus();
+        }
+
         if (capabilities?.zoom) {
           const { min, max, step } = capabilities.zoom;
           zoomRangeRef.current = { min, max, step };
@@ -251,8 +269,8 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
           <DialogHeader>
             <DialogTitle>Ler código de barras</DialogTitle>
             <DialogDescription>
-              Centralize o código de barras dentro da área marcada. Se a imagem não focalizar,
-              toque na tela ou use os botões de zoom.
+              Centralize o código de barras dentro da área marcada. Se a imagem estiver embaçada,
+              use os botões de foco (ícone de mira) e de zoom até ficar nítida.
             </DialogDescription>
           </DialogHeader>
           {error ? (
@@ -279,36 +297,69 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
                   bottom: `${marginY}%`,
                 }}
               />
-              {zoom != null ? (
-                <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/60 px-2 py-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-7 text-white hover:bg-white/20 hover:text-white"
-                    aria-label="Diminuir zoom"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      adjustZoom(-1);
-                    }}
-                  >
-                    <ZoomOut className="size-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-7 text-white hover:bg-white/20 hover:text-white"
-                    aria-label="Aumentar zoom"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      adjustZoom(1);
-                    }}
-                  >
-                    <ZoomIn className="size-4" />
-                  </Button>
-                </div>
-              ) : null}
+              <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 flex-col items-center gap-1.5">
+                {focusDistance != null ? (
+                  <div className="flex items-center gap-2 rounded-full bg-black/60 px-2 py-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-7 text-white hover:bg-white/20 hover:text-white"
+                      aria-label="Diminuir distância de foco"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        adjustFocus(-1);
+                      }}
+                    >
+                      <Minus className="size-4" />
+                    </Button>
+                    <Focus className="size-4 text-white" />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-7 text-white hover:bg-white/20 hover:text-white"
+                      aria-label="Aumentar distância de foco"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        adjustFocus(1);
+                      }}
+                    >
+                      <Plus className="size-4" />
+                    </Button>
+                  </div>
+                ) : null}
+                {zoom != null ? (
+                  <div className="flex items-center gap-2 rounded-full bg-black/60 px-2 py-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-7 text-white hover:bg-white/20 hover:text-white"
+                      aria-label="Diminuir zoom"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        adjustZoom(-1);
+                      }}
+                    >
+                      <ZoomOut className="size-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-7 text-white hover:bg-white/20 hover:text-white"
+                      aria-label="Aumentar zoom"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        adjustZoom(1);
+                      }}
+                    >
+                      <ZoomIn className="size-4" />
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
             </div>
           )}
           <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="gap-1.5">

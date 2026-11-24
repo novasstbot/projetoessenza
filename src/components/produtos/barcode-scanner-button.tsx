@@ -24,6 +24,7 @@ declare global {
 
 type TrackCapabilitiesExt = MediaTrackCapabilities & {
   focusMode?: string[];
+  focusDistance?: { min: number; max: number; step: number };
   zoom?: { min: number; max: number; step: number };
 };
 
@@ -77,12 +78,32 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
     const track = trackRef.current;
     if (!track) return;
     const capabilities = track.getCapabilities?.() as TrackCapabilitiesExt | undefined;
-    if (!capabilities?.focusMode?.includes("continuous")) return;
-    track
-      .applyConstraints({
-        advanced: [{ focusMode: "continuous" } as unknown as MediaTrackConstraintSet],
-      })
-      .catch(() => {});
+    if (!capabilities) return;
+
+    // "continuous" sozinho raramente foca em algo tão próximo quanto um
+    // código de barras — o foco manual fixado na distância mínima força o
+    // comportamento de macro que esse caso precisa.
+    if (capabilities.focusMode?.includes("manual") && capabilities.focusDistance) {
+      track
+        .applyConstraints({
+          advanced: [
+            {
+              focusMode: "manual",
+              focusDistance: capabilities.focusDistance.min,
+            } as unknown as MediaTrackConstraintSet,
+          ],
+        })
+        .catch(() => {});
+      return;
+    }
+
+    if (capabilities.focusMode?.includes("continuous")) {
+      track
+        .applyConstraints({
+          advanced: [{ focusMode: "continuous" } as unknown as MediaTrackConstraintSet],
+        })
+        .catch(() => {});
+    }
   }
 
   function applyZoom(value: number) {

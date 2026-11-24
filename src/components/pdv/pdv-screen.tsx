@@ -10,7 +10,6 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 import { ProductSearch } from "@/components/pdv/product-search";
 import { CartTable } from "@/components/pdv/cart-table";
 import { PaymentDialog } from "@/components/pdv/payment-dialog";
-import { CloseCaixaDialog } from "@/components/pdv/close-caixa-dialog";
 import { VendasCaixaDialog } from "@/components/pdv/vendas-caixa-dialog";
 import type { CartItem, ClientePdv, FormaPagamento, ProdutoPdv } from "@/modules/pdv/types";
 
@@ -101,10 +100,7 @@ export function PdvScreen({
                 minute: "2-digit",
               })}
             </span>
-            <div className="flex gap-2">
-              <VendasCaixaDialog caixaId={caixaId} />
-              <CloseCaixaDialog caixaId={caixaId} />
-            </div>
+            <VendasCaixaDialog caixaId={caixaId} />
           </div>
 
           <div className="space-y-1.5">

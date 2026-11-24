@@ -4,7 +4,15 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ContasFinanceirasList } from "@/components/caixa/contas-financeiras-list";
+import { SangriaDialog } from "@/components/caixa/sangria-dialog";
+import { SuprimentoDialog } from "@/components/caixa/suprimento-dialog";
+import { DespesaDialog } from "@/components/caixa/despesa-dialog";
+import { AjusteDialog } from "@/components/caixa/ajuste-dialog";
+import { FechamentoDialog } from "@/components/caixa/fechamento-dialog";
 import { createClient } from "@/lib/supabase/server";
+import { getProfile } from "@/server/auth/session";
+import type { ContaFinanceira } from "@/modules/financeiro/types";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -15,7 +23,10 @@ function formatDateTime(value: string) {
 }
 
 export default async function CaixaPage() {
-  const supabase = await createClient();
+  const [supabase, profile] = await Promise.all([createClient(), getProfile()]);
+  const canOperate =
+    profile?.role === "admin" || profile?.role === "gerente" || profile?.role === "vendedor";
+  const canAjustar = profile?.role === "admin" || profile?.role === "gerente";
 
   const { data: aberto } = await supabase
     .from("caixas")
@@ -35,10 +46,20 @@ export default async function CaixaPage() {
   const fechadosIds = (fechados ?? []).map((c) => c.id);
   const caixaIdsParaMovimentos = aberto ? [aberto.id, ...fechadosIds] : fechadosIds;
 
-  const { data: todosMovimentos } = await supabase
-    .from("movimentacoes_caixa")
-    .select("caixa_id, tipo, valor")
-    .in("caixa_id", caixaIdsParaMovimentos.length > 0 ? caixaIdsParaMovimentos : ["00000000-0000-0000-0000-000000000000"]);
+  const [{ data: todosMovimentos }, { data: contas }, { data: movFinanceiras }] =
+    await Promise.all([
+      supabase
+        .from("movimentacoes_caixa")
+        .select("caixa_id, tipo, valor")
+        .in(
+          "caixa_id",
+          caixaIdsParaMovimentos.length > 0
+            ? caixaIdsParaMovimentos
+            : ["00000000-0000-0000-0000-000000000000"],
+        ),
+      supabase.from("contas_financeiras").select("id, nome, tipo, ativo").eq("ativo", true).order("nome"),
+      supabase.from("movimentacoes_financeiras").select("conta_id, tipo, valor"),
+    ]);
 
   const totaisPorCaixa = new Map<string, { entradas: number; saidas: number }>();
   for (const mov of todosMovimentos ?? []) {
@@ -53,12 +74,28 @@ export default async function CaixaPage() {
     ? aberto.valor_abertura + (totaisAberto?.entradas ?? 0) - (totaisAberto?.saidas ?? 0)
     : 0;
 
+  const saldosContas = new Map<string, number>();
+  for (const mov of movFinanceiras ?? []) {
+    const atual = saldosContas.get(mov.conta_id) ?? 0;
+    saldosContas.set(mov.conta_id, atual + (mov.tipo === "entrada" ? mov.valor : -mov.valor));
+  }
+  if (aberto) {
+    const caixaFisico = (contas ?? []).find((c) => c.tipo === "caixa_fisico");
+    if (caixaFisico) saldosContas.set(caixaFisico.id, esperadoAberto);
+  }
+
+  const contasOrigemSuprimento = (contas ?? []).filter((c) => c.tipo !== "caixa_fisico");
+
   return (
     <div>
       <PageHeader
         title="Caixa"
         description="Abertura, fechamento e conferência de valores do caixa."
       />
+
+      <div className="mb-6">
+        <ContasFinanceirasList contas={(contas as ContaFinanceira[]) ?? []} saldos={saldosContas} />
+      </div>
 
       <Card className="mb-6">
         <CardHeader>
@@ -76,30 +113,43 @@ export default async function CaixaPage() {
         </CardHeader>
         <CardContent>
           {aberto ? (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Aberto em</p>
-                <p className="font-medium text-foreground">{formatDateTime(aberto.aberto_em)}</p>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Aberto em</p>
+                  <p className="font-medium text-foreground">{formatDateTime(aberto.aberto_em)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Valor de abertura</p>
+                  <p className="font-medium text-foreground">
+                    {formatCurrency(aberto.valor_abertura)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Entradas (sessão)</p>
+                  <p className="font-medium text-foreground">
+                    {formatCurrency(totaisAberto?.entradas ?? 0)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Esperado em caixa</p>
+                  <p className="font-medium text-foreground">{formatCurrency(esperadoAberto)}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Valor de abertura</p>
-                <p className="font-medium text-foreground">
-                  {formatCurrency(aberto.valor_abertura)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Total vendido</p>
-                <p className="font-medium text-foreground">
-                  {formatCurrency(totaisAberto?.entradas ?? 0)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Esperado em caixa</p>
-                <p className="font-medium text-foreground">{formatCurrency(esperadoAberto)}</p>
-              </div>
+
+              {canOperate && (
+                <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+                  <SangriaDialog caixaId={aberto.id} />
+                  <SuprimentoDialog caixaId={aberto.id} contas={contasOrigemSuprimento as ContaFinanceira[]} />
+                  <DespesaDialog caixaId={aberto.id} />
+                  {canAjustar && <AjusteDialog caixaId={aberto.id} />}
+                  <FechamentoDialog caixaId={aberto.id} esperado={esperadoAberto} />
+                </div>
+              )}
+
               <Button
                 size="sm"
-                className="col-span-2 sm:col-span-4"
+                variant="outline"
                 render={<Link href="/pdv">Ir para o PDV</Link>}
               />
             </div>
@@ -126,7 +176,7 @@ export default async function CaixaPage() {
                 <tr>
                   <th className="px-4 py-2.5 font-medium">Período</th>
                   <th className="px-4 py-2.5 font-medium">Abertura</th>
-                  <th className="px-4 py-2.5 font-medium">Vendido</th>
+                  <th className="px-4 py-2.5 font-medium">Entradas</th>
                   <th className="px-4 py-2.5 font-medium">Esperado</th>
                   <th className="px-4 py-2.5 font-medium">Informado</th>
                   <th className="px-4 py-2.5 font-medium">Diferença</th>

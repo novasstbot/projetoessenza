@@ -5,12 +5,6 @@ export const abrirCaixaSchema = z.object({
 });
 export type AbrirCaixaFormValues = z.infer<typeof abrirCaixaSchema>;
 
-export const fecharCaixaSchema = z.object({
-  valor_fechamento_informado: z.number().min(0, "Informe o valor contado no caixa"),
-  observacao_fechamento: z.string().optional(),
-});
-export type FecharCaixaFormValues = z.infer<typeof fecharCaixaSchema>;
-
 export const pagamentoSchema = z.object({
   forma_pagamento_id: z.string().uuid(),
   valor: z.number().positive(),

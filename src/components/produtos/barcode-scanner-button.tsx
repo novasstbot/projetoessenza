@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ScanLine, X } from "lucide-react";
+import { Focus, Minus, Plus, ScanLine, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,7 +14,10 @@ import {
   enableContinuousFocus,
   getEffectiveResolution,
   getFocusModes,
+  getManualFocusRange,
+  setManualFocusDistance,
   startRearCamera,
+  type FocusDistanceRange,
   type RearCamera,
 } from "@/lib/barcode/camera";
 import { createNativeBarcodeDecoder, type BarcodeDecoder } from "@/lib/barcode/decoder";
@@ -39,9 +42,32 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
   const frameRef = useRef<number | null>(null);
   const lastCodeRef = useRef<string | null>(null);
   const stableCountRef = useRef(0);
+  const focusRangeRef = useRef<FocusDistanceRange | null>(null);
+  // Ref além do state: o loop de leitura (rodando dentro de uma closure
+  // criada uma única vez pelo efeito) precisa ler o valor atual mesmo após
+  // os botões de +/- mudarem o state em um render separado.
+  const focusValueRef = useRef<number | null>(null);
+  const [focusValue, setFocusValue] = useState<number | null>(null);
 
   function tryFocus() {
     enableContinuousFocus(cameraRef.current?.track ?? null);
+  }
+
+  function applyFocus(value: number) {
+    const range = focusRangeRef.current;
+    const track = cameraRef.current?.track ?? null;
+    if (!range || !track) return;
+    const clamped = Math.min(range.max, Math.max(range.min, value));
+    setManualFocusDistance(track, clamped);
+    focusValueRef.current = clamped;
+    setFocusValue(clamped);
+  }
+
+  function adjustFocus(direction: 1 | -1) {
+    const range = focusRangeRef.current;
+    if (!range || focusValueRef.current == null) return;
+    const step = range.step || (range.max - range.min) / 20 || 0.1;
+    applyFocus(focusValueRef.current + direction * step);
   }
 
   useEffect(() => {
@@ -50,6 +76,8 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
     let cancelled = false;
     lastCodeRef.current = null;
     stableCountRef.current = 0;
+    focusRangeRef.current = null;
+    focusValueRef.current = null;
 
     async function start() {
       let decoder: BarcodeDecoder | null;
@@ -74,6 +102,12 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
         enableContinuousFocus(camera.track);
         const focusModes = getFocusModes(camera.track);
 
+        const manualRange = getManualFocusRange(camera.track);
+        if (manualRange) {
+          focusRangeRef.current = manualRange;
+          applyFocus(manualRange.min + (manualRange.max - manualRange.min) / 2);
+        }
+
         if (videoRef.current) {
           videoRef.current.srcObject = camera.stream;
           await videoRef.current.play();
@@ -93,10 +127,13 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
 
           const resolucao = getEffectiveResolution(video);
           if (resolucao) {
+            const focoInfo = manualRange
+              ? `manual ${focusValueRef.current?.toFixed(2) ?? "?"} (${manualRange.min}-${manualRange.max})`
+              : focusModes?.length
+                ? focusModes.join(",")
+                : "não suportado";
             setDebugInfo(
-              `${resolucao.width}×${resolucao.height} · ${decoder!.supportedFormats.join(", ")} · foco: ${
-                focusModes?.length ? focusModes.join(",") : "não suportado"
-              }`,
+              `${resolucao.width}×${resolucao.height} · ${decoder!.supportedFormats.join(", ")} · foco: ${focoInfo}`,
             );
           }
 
@@ -169,8 +206,8 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
           <DialogHeader>
             <DialogTitle>Ler código de barras</DialogTitle>
             <DialogDescription>
-              Centralize o código de barras dentro da área marcada. Se a imagem não focalizar,
-              toque na tela.
+              Centralize o código de barras dentro da área marcada. Se a imagem estiver embaçada,
+              use os botões de foco (ícone de mira) até ficar nítida.
             </DialogDescription>
           </DialogHeader>
           {error ? (
@@ -196,6 +233,37 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
                 <p className="pointer-events-none absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white/80">
                   {debugInfo}
                 </p>
+              ) : null}
+              {focusValue != null ? (
+                <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/60 px-2 py-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 text-white hover:bg-white/20 hover:text-white"
+                    aria-label="Diminuir distância de foco"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      adjustFocus(-1);
+                    }}
+                  >
+                    <Minus className="size-4" />
+                  </Button>
+                  <Focus className="size-4 text-white" />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 text-white hover:bg-white/20 hover:text-white"
+                    aria-label="Aumentar distância de foco"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      adjustFocus(1);
+                    }}
+                  >
+                    <Plus className="size-4" />
+                  </Button>
+                </div>
               ) : null}
             </div>
           )}

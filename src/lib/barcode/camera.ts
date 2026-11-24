@@ -25,7 +25,10 @@ export async function startRearCamera(): Promise<RearCamera> {
   };
 }
 
-type FocusCapabilities = MediaTrackCapabilities & { focusMode?: string[] };
+type FocusCapabilities = MediaTrackCapabilities & {
+  focusMode?: string[];
+  focusDistance?: { min: number; max: number; step: number };
+};
 
 // "continuous" nem sempre refocaliza em objetos muito próximos, mas sem
 // pedir isso explicitamente alguns celulares não refocalizam depois do
@@ -42,6 +45,30 @@ export function enableContinuousFocus(track: MediaStreamTrack | null): boolean {
     })
     .catch(() => {});
   return true;
+}
+
+export type FocusDistanceRange = { min: number; max: number; step: number };
+
+// Alguns aparelhos só expõem "manual" (sem "continuous") — ou seja, não
+// focalizam automaticamente: é preciso definir a distância de foco na mão.
+// A direção perto/longe da escala varia por aparelho, então quem usa isso
+// deve deixar o usuário ajustar olhando a imagem, em vez de supor um valor.
+export function getManualFocusRange(track: MediaStreamTrack | null): FocusDistanceRange | null {
+  if (!track) return null;
+  const capabilities = track.getCapabilities?.() as FocusCapabilities | undefined;
+  if (!capabilities?.focusMode?.includes("manual") || !capabilities.focusDistance) return null;
+  return capabilities.focusDistance;
+}
+
+export function setManualFocusDistance(track: MediaStreamTrack | null, value: number): void {
+  if (!track) return;
+  track
+    .applyConstraints({
+      advanced: [
+        { focusMode: "manual", focusDistance: value } as unknown as MediaTrackConstraintSet,
+      ],
+    })
+    .catch(() => {});
 }
 
 // Para diagnóstico: diz quais modos de foco a API expõe nesse aparelho/

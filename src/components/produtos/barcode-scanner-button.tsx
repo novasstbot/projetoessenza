@@ -26,8 +26,8 @@ const FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"];
 
 // Só a região dentro do guia visual é escaneada — evita pegar outro código
 // de barras que esteja por perto, fora do quadro.
-const CROP_WIDTH_RATIO = 0.8;
-const CROP_HEIGHT_RATIO = 0.3;
+const CROP_WIDTH_RATIO = 0.85;
+const CROP_HEIGHT_RATIO = 0.38;
 // Quantas leituras seguidas do mesmo valor antes de aceitar — evita acertos
 // falsos de um único frame borrado.
 const FRAMES_PARA_CONFIRMAR = 3;
@@ -53,9 +53,24 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const trackRef = useRef<MediaStreamTrack | null>(null);
   const frameRef = useRef<number | null>(null);
   const lastCodeRef = useRef<string | null>(null);
   const stableCountRef = useRef(0);
+
+  function tryFocus() {
+    const track = trackRef.current;
+    if (!track) return;
+    const capabilities = track.getCapabilities?.() as
+      | (MediaTrackCapabilities & { focusMode?: string[] })
+      | undefined;
+    if (!capabilities?.focusMode?.includes("continuous")) return;
+    track
+      .applyConstraints({
+        advanced: [{ focusMode: "continuous" } as unknown as MediaTrackConstraintSet],
+      })
+      .catch(() => {});
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -67,13 +82,19 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
     async function start() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
+          video: {
+            facingMode: "environment",
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+          },
         });
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
         streamRef.current = stream;
+        trackRef.current = stream.getVideoTracks()[0] ?? null;
+        tryFocus();
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
@@ -137,6 +158,7 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
       if (frameRef.current) cancelAnimationFrame(frameRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
+      trackRef.current = null;
     };
   }, [open, onDetected]);
 
@@ -165,13 +187,18 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
           <DialogHeader>
             <DialogTitle>Ler código de barras</DialogTitle>
             <DialogDescription>
-              Centralize o código de barras dentro da área marcada.
+              Centralize o código de barras dentro da área marcada. Afaste um pouco a câmera até a
+              imagem ficar nítida — se não focar, toque na tela.
             </DialogDescription>
           </DialogHeader>
           {error ? (
             <p className="py-6 text-center text-sm text-destructive">{error}</p>
           ) : (
-            <div className="relative overflow-hidden rounded-lg bg-black">
+            <div
+              className="relative overflow-hidden rounded-lg bg-black"
+              onClick={tryFocus}
+              role="presentation"
+            >
               <video ref={videoRef} className="aspect-video w-full" muted playsInline />
               <canvas ref={canvasRef} className="hidden" />
               <div

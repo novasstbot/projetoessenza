@@ -60,15 +60,27 @@ export function getManualFocusRange(track: MediaStreamTrack | null): FocusDistan
   return capabilities.focusDistance;
 }
 
-export function setManualFocusDistance(track: MediaStreamTrack | null, value: number): void {
-  if (!track) return;
-  track
-    .applyConstraints({
+// Retorna o valor que a câmera de fato confirma ter aplicado (via
+// getSettings, depois do applyConstraints resolver) — não o valor pedido.
+// Em alguns aparelhos/navegadores o pedido é aceito sem erro mas ignorado
+// pelo driver, e sem checar aqui não dá pra distinguir isso de "o valor foi
+// aplicado mas a lente não focaliza nessa distância".
+export async function setManualFocusDistance(
+  track: MediaStreamTrack | null,
+  value: number,
+): Promise<number | null> {
+  if (!track) return null;
+  try {
+    await track.applyConstraints({
       advanced: [
         { focusMode: "manual", focusDistance: value } as unknown as MediaTrackConstraintSet,
       ],
-    })
-    .catch(() => {});
+    });
+  } catch {
+    return null;
+  }
+  const settings = track.getSettings?.() as (MediaTrackSettings & { focusDistance?: number }) | undefined;
+  return settings?.focusDistance ?? null;
 }
 
 // Para diagnóstico: diz quais modos de foco a API expõe nesse aparelho/

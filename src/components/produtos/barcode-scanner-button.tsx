@@ -48,6 +48,10 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
   // os botões de +/- mudarem o state em um render separado.
   const focusValueRef = useRef<number | null>(null);
   const [focusValue, setFocusValue] = useState<number | null>(null);
+  // O que a câmera confirma ter aplicado de fato (getSettings), não o que
+  // foi pedido — se divergir do pedido, o navegador está ignorando o
+  // comando de foco nesse aparelho. Ref pelo mesmo motivo do focusValueRef.
+  const focusAppliedRef = useRef<number | null>(null);
 
   function tryFocus() {
     enableContinuousFocus(cameraRef.current?.track ?? null);
@@ -58,9 +62,11 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
     const track = cameraRef.current?.track ?? null;
     if (!range || !track) return;
     const clamped = Math.min(range.max, Math.max(range.min, value));
-    setManualFocusDistance(track, clamped);
     focusValueRef.current = clamped;
     setFocusValue(clamped);
+    setManualFocusDistance(track, clamped).then((applied) => {
+      focusAppliedRef.current = applied;
+    });
   }
 
   function adjustFocus(direction: 1 | -1) {
@@ -78,6 +84,7 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
     stableCountRef.current = 0;
     focusRangeRef.current = null;
     focusValueRef.current = null;
+    focusAppliedRef.current = null;
 
     async function start() {
       let decoder: BarcodeDecoder | null;
@@ -128,7 +135,9 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
           const resolucao = getEffectiveResolution(video);
           if (resolucao) {
             const focoInfo = manualRange
-              ? `manual ${focusValueRef.current?.toFixed(2) ?? "?"} (${manualRange.min}-${manualRange.max})`
+              ? `manual pedido=${focusValueRef.current?.toFixed(2) ?? "?"} aplicado=${
+                  focusAppliedRef.current?.toFixed(2) ?? "?"
+                } (${manualRange.min}-${manualRange.max})`
               : focusModes?.length
                 ? focusModes.join(",")
                 : "não suportado";

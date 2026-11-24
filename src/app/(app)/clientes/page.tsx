@@ -12,7 +12,7 @@ export default async function ClientesPage() {
   const { data: clientes } = await supabase
     .from("customers")
     .select(
-      "id, full_name, email, phone, data_nascimento, ativo, created_at, communication_preferences(email_opt_in)",
+      "id, full_name, email, phone, cpf_cnpj, data_nascimento, ativo, created_at, communication_preferences(email_opt_in)",
     )
     .order("full_name");
 

@@ -31,7 +31,11 @@ export default async function PdvPage() {
         .order("nome"),
       supabase.from("estoque_atual").select("produto_id, quantidade_atual"),
       supabase.from("formas_pagamento").select("id, nome").eq("ativo", true).order("nome"),
-      supabase.from("customers").select("id, full_name").eq("ativo", true).order("full_name"),
+      supabase
+        .from("customers")
+        .select("id, full_name, cpf_cnpj")
+        .eq("ativo", true)
+        .order("full_name"),
     ]);
 
   const estoquePorProduto = new Map(

@@ -20,6 +20,7 @@ export type CartItem = {
 export type ClientePdv = {
   id: string;
   full_name: string;
+  cpf_cnpj: string | null;
 };
 
 export type VendaCaixa = {

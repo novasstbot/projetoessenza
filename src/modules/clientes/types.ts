@@ -1,8 +1,9 @@
 export type Cliente = {
   id: string;
   full_name: string;
-  email: string;
+  email: string | null;
   phone: string | null;
+  cpf_cnpj: string | null;
   data_nascimento: string | null;
   ativo: boolean;
   created_at: string;

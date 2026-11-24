@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { PhoneInput } from "@/components/ui/phone-input";
+import { CnpjCpfInput } from "@/components/ui/cnpj-cpf-input";
 import {
   Form,
   FormControl,
@@ -32,6 +33,7 @@ export function ClienteForm({
       full_name: cliente?.full_name ?? "",
       email: cliente?.email ?? "",
       phone: cliente?.phone ?? "",
+      cpf_cnpj: cliente?.cpf_cnpj ?? "",
       data_nascimento: cliente?.data_nascimento ?? "",
       email_opt_in: cliente?.communication_preferences?.email_opt_in ?? false,
     },
@@ -82,6 +84,9 @@ export function ClienteForm({
             </FormItem>
           )}
         />
+        <p className="-mt-2 text-xs text-muted-foreground">
+          Informe pelo menos e-mail ou telefone.
+        </p>
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -98,18 +103,31 @@ export function ClienteForm({
           />
           <FormField
             control={form.control}
-            name="data_nascimento"
+            name="cpf_cnpj"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Nascimento</FormLabel>
+                <FormLabel>CPF</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <CnpjCpfInput placeholder="000.000.000-00" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
+        <FormField
+          control={form.control}
+          name="data_nascimento"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nascimento</FormLabel>
+              <FormControl>
+                <Input type="date" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}

@@ -27,7 +27,9 @@ export function ClientesTable({
     if (!term) return clientes;
     return clientes.filter(
       (c) =>
-        c.full_name.toLowerCase().includes(term) || c.email.toLowerCase().includes(term),
+        c.full_name.toLowerCase().includes(term) ||
+        (c.email ?? "").toLowerCase().includes(term) ||
+        (c.cpf_cnpj ?? "").includes(term),
     );
   }, [clientes, search]);
 
@@ -49,7 +51,7 @@ export function ClientesTable({
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nome ou e-mail"
+            placeholder="Buscar por nome, e-mail ou CPF"
             className="pl-8"
           />
         </div>
@@ -92,8 +94,11 @@ export function ClientesTable({
                       {cliente.full_name}
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground">
-                      {cliente.email}
+                      {cliente.email ?? "—"}
                       {cliente.phone && <span className="block text-xs">{cliente.phone}</span>}
+                      {cliente.cpf_cnpj && (
+                        <span className="block text-xs">{cliente.cpf_cnpj}</span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5">
                       <Badge variant={optIn ? "secondary" : "outline"} className="gap-1">

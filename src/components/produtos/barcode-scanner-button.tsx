@@ -13,6 +13,7 @@ import {
 import {
   enableContinuousFocus,
   getEffectiveResolution,
+  getFocusModes,
   startRearCamera,
   type RearCamera,
 } from "@/lib/barcode/camera";
@@ -71,6 +72,7 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
         }
         cameraRef.current = camera;
         enableContinuousFocus(camera.track);
+        const focusModes = getFocusModes(camera.track);
 
         if (videoRef.current) {
           videoRef.current.srcObject = camera.stream;
@@ -92,7 +94,9 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
           const resolucao = getEffectiveResolution(video);
           if (resolucao) {
             setDebugInfo(
-              `${resolucao.width}×${resolucao.height} · formatos: ${decoder!.supportedFormats.join(", ")}`,
+              `${resolucao.width}×${resolucao.height} · ${decoder!.supportedFormats.join(", ")} · foco: ${
+                focusModes?.length ? focusModes.join(",") : "não suportado"
+              }`,
             );
           }
 

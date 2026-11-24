@@ -44,6 +44,16 @@ export function enableContinuousFocus(track: MediaStreamTrack | null): boolean {
   return true;
 }
 
+// Para diagnóstico: diz quais modos de foco a API expõe nesse aparelho/
+// navegador. Se vier null ou vazio, o foco não pode ser controlado via Web
+// APIs — qualquer problema de nitidez de perto é uma limitação de
+// hardware/driver, não algo que código resolva.
+export function getFocusModes(track: MediaStreamTrack | null): string[] | null {
+  if (!track) return null;
+  const capabilities = track.getCapabilities?.() as FocusCapabilities | undefined;
+  return capabilities?.focusMode ?? null;
+}
+
 export function getEffectiveResolution(
   video: HTMLVideoElement,
 ): { width: number; height: number } | null {

@@ -39,6 +39,21 @@ const CROP_HEIGHT_RATIO = 0.38;
 // falsos de um único frame borrado.
 const FRAMES_PARA_CONFIRMAR = 3;
 
+// Sem isso, alguns celulares não refocalizam depois do primeiro frame —
+// a câmera fica parada na distância em que abriu.
+function tryFocusContinuous(track: MediaStreamTrack | null) {
+  if (!track) return;
+  const capabilities = track.getCapabilities?.() as
+    | (MediaTrackCapabilities & { focusMode?: string[] })
+    | undefined;
+  if (!capabilities?.focusMode?.includes("continuous")) return;
+  track
+    .applyConstraints({
+      advanced: [{ focusMode: "continuous" } as unknown as MediaTrackConstraintSet],
+    })
+    .catch(() => {});
+}
+
 export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string) => void }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +87,7 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
           return;
         }
         streamRef.current = stream;
+        tryFocusContinuous(stream.getVideoTracks()[0] ?? null);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
@@ -163,13 +179,18 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
           <DialogHeader>
             <DialogTitle>Ler código de barras</DialogTitle>
             <DialogDescription>
-              Centralize o código de barras dentro da área marcada e mantenha o celular estável.
+              Centralize o código de barras dentro da área marcada. Se a imagem não focalizar,
+              toque na tela.
             </DialogDescription>
           </DialogHeader>
           {error ? (
             <p className="py-6 text-center text-sm text-destructive">{error}</p>
           ) : (
-            <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
+            <div
+              className="relative aspect-video w-full overflow-hidden rounded-lg bg-black"
+              onClick={() => tryFocusContinuous(streamRef.current?.getVideoTracks()[0] ?? null)}
+              role="presentation"
+            >
               <video ref={videoRef} className="h-full w-full object-cover" muted playsInline />
               <canvas ref={canvasRef} className="hidden" />
               <div

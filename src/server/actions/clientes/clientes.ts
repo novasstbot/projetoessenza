@@ -72,6 +72,7 @@ export async function createClienteRapido(values: ClienteRapidoFormValues) {
       email: parsed.email || null,
       phone: parsed.phone || null,
       cpf_cnpj: parsed.cpf_cnpj || null,
+      data_nascimento: parsed.data_nascimento || null,
       origin: "pdv",
     })
     .select("id, full_name")

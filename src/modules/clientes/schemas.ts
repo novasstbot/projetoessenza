@@ -29,6 +29,7 @@ export const clienteRapidoSchema = z
     cpf_cnpj: z.string().optional().or(z.literal("")),
     email: z.string().email("E-mail inválido").optional().or(z.literal("")),
     phone: z.string().optional().or(z.literal("")),
+    data_nascimento: z.string().optional().or(z.literal("")),
   })
   .superRefine(requireEmailOrPhone);
 

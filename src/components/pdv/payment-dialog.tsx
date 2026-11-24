@@ -56,7 +56,7 @@ function NovoClienteForm({
 }) {
   const form = useForm<ClienteRapidoFormValues>({
     resolver: zodResolver(clienteRapidoSchema),
-    defaultValues: { full_name: "", cpf_cnpj: "", phone: "", email: "" },
+    defaultValues: { full_name: "", cpf_cnpj: "", phone: "", email: "", data_nascimento: "" },
   });
 
   async function onSubmit(values: ClienteRapidoFormValues) {
@@ -116,19 +116,34 @@ function NovoClienteForm({
             )}
           />
         </div>
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-xs">E-mail</FormLabel>
-              <FormControl>
-                <Input type="email" placeholder="maria@email.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-2 gap-2">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs">E-mail</FormLabel>
+                <FormControl>
+                  <Input type="email" placeholder="maria@email.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="data_nascimento"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs">Nascimento</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <p className="text-xs text-muted-foreground">Informe e-mail ou telefone.</p>
         <div className="flex gap-2 pt-1">
           <Button type="button" variant="ghost" size="sm" className="flex-1" onClick={onCancel}>

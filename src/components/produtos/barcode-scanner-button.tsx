@@ -24,6 +24,14 @@ declare global {
 
 const FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"];
 
+// Só a região dentro do guia visual é escaneada — evita pegar outro código
+// de barras que esteja por perto, fora do quadro.
+const CROP_WIDTH_RATIO = 0.8;
+const CROP_HEIGHT_RATIO = 0.3;
+// Quantas leituras seguidas do mesmo valor antes de aceitar — evita acertos
+// falsos de um único frame borrado.
+const FRAMES_PARA_CONFIRMAR = 3;
+
 function subscribeNever() {
   return () => {};
 }
@@ -43,13 +51,18 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
     getServerSupportSnapshot,
   );
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const frameRef = useRef<number | null>(null);
+  const lastCodeRef = useRef<string | null>(null);
+  const stableCountRef = useRef(0);
 
   useEffect(() => {
     if (!open) return;
 
     let cancelled = false;
+    lastCodeRef.current = null;
+    stableCountRef.current = 0;
 
     async function start() {
       try {
@@ -69,11 +82,40 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
         const detector = new window.BarcodeDetector!({ formats: FORMATS });
 
         const loop = async () => {
-          if (!videoRef.current || cancelled) return;
+          const video = videoRef.current;
+          const canvas = canvasRef.current;
+          if (!video || !canvas || cancelled) return;
+
+          const vw = video.videoWidth;
+          const vh = video.videoHeight;
+          if (!vw || !vh) {
+            frameRef.current = requestAnimationFrame(loop);
+            return;
+          }
+
+          const sw = vw * CROP_WIDTH_RATIO;
+          const sh = vh * CROP_HEIGHT_RATIO;
+          const sx = (vw - sw) / 2;
+          const sy = (vh - sh) / 2;
+
+          canvas.width = sw;
+          canvas.height = sh;
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh);
+
           try {
-            const codes = await detector.detect(videoRef.current);
-            if (codes.length > 0) {
-              onDetected(codes[0].rawValue);
+            const codes = await detector.detect(canvas);
+            const value = codes[0]?.rawValue ?? null;
+
+            if (value && value === lastCodeRef.current) {
+              stableCountRef.current += 1;
+            } else {
+              lastCodeRef.current = value;
+              stableCountRef.current = value ? 1 : 0;
+            }
+
+            if (value && stableCountRef.current >= FRAMES_PARA_CONFIRMAR) {
+              onDetected(value);
               setOpen(false);
               return;
             }
@@ -100,6 +142,9 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
 
   if (!supported) return null;
 
+  const marginX = ((1 - CROP_WIDTH_RATIO) / 2) * 100;
+  const marginY = ((1 - CROP_HEIGHT_RATIO) / 2) * 100;
+
   return (
     <>
       <Button
@@ -119,14 +164,25 @@ export function BarcodeScannerButton({ onDetected }: { onDetected: (code: string
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Ler código de barras</DialogTitle>
-            <DialogDescription>Aponte a câmera para o código de barras do produto.</DialogDescription>
+            <DialogDescription>
+              Centralize o código de barras dentro da área marcada.
+            </DialogDescription>
           </DialogHeader>
           {error ? (
             <p className="py-6 text-center text-sm text-destructive">{error}</p>
           ) : (
             <div className="relative overflow-hidden rounded-lg bg-black">
               <video ref={videoRef} className="aspect-video w-full" muted playsInline />
-              <div className="pointer-events-none absolute inset-8 rounded-lg border-2 border-gold" />
+              <canvas ref={canvasRef} className="hidden" />
+              <div
+                className="pointer-events-none absolute rounded-lg border-2 border-gold"
+                style={{
+                  left: `${marginX}%`,
+                  right: `${marginX}%`,
+                  top: `${marginY}%`,
+                  bottom: `${marginY}%`,
+                }}
+              />
             </div>
           )}
           <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="gap-1.5">

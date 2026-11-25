@@ -12,7 +12,7 @@ import { AjusteDialog } from "@/components/caixa/ajuste-dialog";
 import { FechamentoDialog } from "@/components/caixa/fechamento-dialog";
 import { DetalhesCaixaDialog } from "@/components/caixa/detalhes-caixa-dialog";
 import { createClient } from "@/lib/supabase/server";
-import { getProfile } from "@/server/auth/session";
+import { requireRole } from "@/server/auth/session";
 import type { ContaFinanceira } from "@/modules/financeiro/types";
 
 function formatCurrency(value: number) {
@@ -24,10 +24,14 @@ function formatDateTime(value: string) {
 }
 
 export default async function CaixaPage() {
-  const [supabase, profile] = await Promise.all([createClient(), getProfile()]);
-  const canOperate =
-    profile?.role === "admin" || profile?.role === "gerente" || profile?.role === "vendedor";
-  const canAjustar = profile?.role === "admin" || profile?.role === "gerente";
+  const [supabase, profile] = await Promise.all([
+    createClient(),
+    requireRole(["admin", "gerente", "vendedor"]),
+  ]);
+  // Vendedor opera o caixa (sangria/suprimento/despesa/fechamento) mas não
+  // vê saldo das contas financeiras nem o histórico de fechamentos de
+  // outras sessões — isso fica só pra quem administra o financeiro.
+  const canAjustar = profile.role === "admin" || profile.role === "gerente";
 
   const { data: aberto } = await supabase
     .from("caixas")
@@ -94,9 +98,14 @@ export default async function CaixaPage() {
         description="Abertura, fechamento e conferência de valores do caixa."
       />
 
-      <div className="mb-6">
-        <ContasFinanceirasList contas={(contas as ContaFinanceira[]) ?? []} saldos={saldosContas} />
-      </div>
+      {canAjustar && (
+        <div className="mb-6">
+          <ContasFinanceirasList
+            contas={(contas as ContaFinanceira[]) ?? []}
+            saldos={saldosContas}
+          />
+        </div>
+      )}
 
       <Card className="mb-6">
         <CardHeader>
@@ -138,16 +147,14 @@ export default async function CaixaPage() {
                 </div>
               </div>
 
-              {canOperate && (
-                <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-                  <SangriaDialog caixaId={aberto.id} />
-                  <SuprimentoDialog caixaId={aberto.id} contas={contasOrigemSuprimento as ContaFinanceira[]} />
-                  <DespesaDialog caixaId={aberto.id} />
-                  {canAjustar && <AjusteDialog caixaId={aberto.id} />}
-                  <DetalhesCaixaDialog caixaId={aberto.id} canManage={canAjustar} />
-                  <FechamentoDialog caixaId={aberto.id} esperado={esperadoAberto} />
-                </div>
-              )}
+              <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+                <SangriaDialog caixaId={aberto.id} />
+                <SuprimentoDialog caixaId={aberto.id} contas={contasOrigemSuprimento as ContaFinanceira[]} />
+                <DespesaDialog caixaId={aberto.id} />
+                {canAjustar && <AjusteDialog caixaId={aberto.id} />}
+                <DetalhesCaixaDialog caixaId={aberto.id} canManage={canAjustar} />
+                <FechamentoDialog caixaId={aberto.id} esperado={esperadoAberto} />
+              </div>
 
               <Button
                 size="sm"
@@ -167,6 +174,7 @@ export default async function CaixaPage() {
         </CardContent>
       </Card>
 
+      {canAjustar && (
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Histórico de fechamentos</CardTitle>
@@ -244,6 +252,7 @@ export default async function CaixaPage() {
           </div>
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }

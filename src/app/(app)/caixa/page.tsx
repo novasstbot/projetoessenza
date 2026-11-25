@@ -13,6 +13,7 @@ import { FechamentoDialog } from "@/components/caixa/fechamento-dialog";
 import { DetalhesCaixaDialog } from "@/components/caixa/detalhes-caixa-dialog";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/server/auth/session";
+import { buildTotaisPorCaixa } from "@/lib/caixa/totais";
 import type { ContaFinanceira } from "@/modules/financeiro/types";
 
 function formatCurrency(value: number) {
@@ -66,13 +67,7 @@ export default async function CaixaPage() {
       supabase.from("movimentacoes_financeiras").select("conta_id, tipo, valor"),
     ]);
 
-  const totaisPorCaixa = new Map<string, { entradas: number; saidas: number }>();
-  for (const mov of todosMovimentos ?? []) {
-    const atual = totaisPorCaixa.get(mov.caixa_id) ?? { entradas: 0, saidas: 0 };
-    if (mov.tipo === "entrada") atual.entradas += mov.valor;
-    else atual.saidas += mov.valor;
-    totaisPorCaixa.set(mov.caixa_id, atual);
-  }
+  const totaisPorCaixa = buildTotaisPorCaixa(todosMovimentos ?? []);
 
   const totaisAberto = aberto ? (totaisPorCaixa.get(aberto.id) ?? { entradas: 0, saidas: 0 }) : null;
   const esperadoAberto = aberto

@@ -1,9 +1,10 @@
+import { Lock } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { ContasPagarSection } from "@/components/financeiro/contas-pagar-section";
 import { ContasReceberSection } from "@/components/financeiro/contas-receber-section";
 import { createClient } from "@/lib/supabase/server";
-import { getProfile } from "@/server/auth/session";
+import { requireRole } from "@/server/auth/session";
 import type { ContaFinanceira, ContaPagar, ContaReceber } from "@/modules/financeiro/types";
 
 function formatCurrency(value: number) {
@@ -11,8 +12,28 @@ function formatCurrency(value: number) {
 }
 
 export default async function FinanceiroPage() {
-  const [supabase, profile] = await Promise.all([createClient(), getProfile()]);
-  const canManage = profile?.role === "admin" || profile?.role === "gerente";
+  const [supabase, profile] = await Promise.all([
+    createClient(),
+    requireRole(["admin", "gerente", "vendedor"]),
+  ]);
+  const canManage = profile.role === "admin" || profile.role === "gerente";
+
+  if (!canManage) {
+    return (
+      <div>
+        <PageHeader title="Financeiro" description="Contas a pagar e a receber da Essenza." />
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
+            <Lock className="size-8 text-muted-foreground" />
+            <p className="font-medium text-foreground">Acesso restrito</p>
+            <p className="max-w-md text-sm text-muted-foreground">
+              Esta tela é visível só para administradores e gerentes.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const [
     { data: contasPagar },

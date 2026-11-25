@@ -100,3 +100,30 @@ export type CaixaDetalhe = {
   observacao_fechamento: string | null;
   contagem_cedulas: Record<string, number> | null;
 };
+
+export type CaixaPeriodo = {
+  id: string;
+  status: "aberto" | "fechado";
+  valor_abertura: number;
+  aberto_em: string;
+  fechado_em: string | null;
+  valor_fechamento_informado: number | null;
+  entradas: number;
+  saidas: number;
+  esperado: number;
+  diferenca: number | null;
+};
+
+export type CategoriaResumoPeriodo = {
+  categoria: MovimentacaoCategoria;
+  entradas: number;
+  saidas: number;
+};
+
+export type MovimentoCaixaPeriodo = {
+  caixa_id: string;
+  tipo: "entrada" | "saida";
+  categoria: MovimentacaoCategoria;
+  valor: number;
+  created_at: string;
+};

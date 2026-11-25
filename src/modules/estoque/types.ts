@@ -1,5 +1,13 @@
 export type MovimentacaoTipo = "entrada" | "saida";
-export type MovimentacaoOrigem = "manual" | "compra" | "venda" | "ajuste_inventario";
+export type MovimentacaoOrigem = "manual" | "compra" | "venda" | "ajuste_inventario" | "perda";
+
+export const movimentacaoOrigemLabels: Record<MovimentacaoOrigem, string> = {
+  manual: "Ajuste manual",
+  compra: "Compra",
+  venda: "Venda",
+  ajuste_inventario: "Ajuste de inventário",
+  perda: "Perda",
+};
 
 export type ProdutoComEstoque = {
   id: string;
@@ -25,4 +33,17 @@ export type Movimentacao = {
   created_at: string;
   produtos: { nome: string; codigo_interno: string } | null;
   profiles: { full_name: string | null } | null;
+};
+
+export type ProdutoEstoqueDetalhado = ProdutoComEstoque & { custo: number };
+
+export type MovimentacaoEstoquePeriodo = {
+  id: string;
+  produto_id: string;
+  tipo: MovimentacaoTipo;
+  quantidade: number;
+  motivo: string;
+  origem: MovimentacaoOrigem;
+  created_at: string;
+  produtos: { nome: string; codigo_interno: string } | null;
 };

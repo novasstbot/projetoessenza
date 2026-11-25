@@ -31,7 +31,7 @@ export async function createMovimentacao(values: MovimentacaoFormValues) {
       tipo: parsed.tipo,
       quantidade: parsed.quantidade,
       motivo: parsed.motivo,
-      origem: "manual",
+      origem: parsed.tipo === "saida" ? parsed.origem : "manual",
       user_id: profile.id,
     })
     .select("id")

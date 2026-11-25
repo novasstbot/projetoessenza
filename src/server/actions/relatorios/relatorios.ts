@@ -63,3 +63,45 @@ export async function getCaixasPeriodo() {
   // período no cliente, igual já faz com vendas e caixas.
   return { caixas: caixasComTotais, movimentos: movimentos ?? [] };
 }
+
+export async function getEstoqueAtualDetalhado() {
+  await requireRole(["admin", "gerente", "vendedor"]);
+
+  const supabase = await createClient();
+  const [{ data: produtos, error: produtosError }, { data: estoqueAtual, error: estoqueError }] =
+    await Promise.all([
+      supabase
+        .from("produtos")
+        .select("id, nome, codigo_interno, estoque_minimo, validade, custo")
+        .eq("ativo", true)
+        .order("nome"),
+      supabase.from("estoque_atual").select("produto_id, quantidade_atual"),
+    ]);
+  if (produtosError) throw new Error(produtosError.message);
+  if (estoqueError) throw new Error(estoqueError.message);
+
+  const quantidadePorProduto = new Map(
+    (estoqueAtual ?? []).map((item) => [item.produto_id, item.quantidade_atual]),
+  );
+
+  return (produtos ?? []).map((produto) => ({
+    ...produto,
+    quantidade_atual: quantidadePorProduto.get(produto.id) ?? 0,
+    tem_movimentacao: quantidadePorProduto.has(produto.id),
+  }));
+}
+
+export async function getMovimentacoesEstoquePeriodo() {
+  await requireRole(["admin", "gerente", "vendedor"]);
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("movimentacoes_estoque")
+    .select("id, produto_id, tipo, quantidade, motivo, origem, created_at, produtos(nome, codigo_interno)")
+    .gte("created_at", dozeMesesAtras())
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  return data;
+}

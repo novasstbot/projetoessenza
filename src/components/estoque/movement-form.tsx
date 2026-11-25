@@ -38,14 +38,15 @@ export function MovementForm({
 }) {
   const form = useForm<MovimentacaoFormValues>({
     resolver: zodResolver(movimentacaoSchema),
-    defaultValues: { produto_id: "", tipo: "entrada", quantidade: 1, motivo: "" },
+    defaultValues: { produto_id: "", tipo: "entrada", quantidade: 1, motivo: "", origem: "manual" },
   });
+  const tipo = form.watch("tipo");
 
   async function onSubmit(values: MovimentacaoFormValues) {
     try {
       await createMovimentacao(values);
       toast.success("Movimentação registrada.");
-      form.reset({ produto_id: "", tipo: "entrada", quantidade: 1, motivo: "" });
+      form.reset({ produto_id: "", tipo: "entrada", quantidade: 1, motivo: "", origem: "manual" });
       onSuccess();
     } catch (error) {
       toast.error(
@@ -127,6 +128,32 @@ export function MovementForm({
             )}
           />
         </div>
+
+        {tipo === "saida" && (
+          <FormField
+            control={form.control}
+            name="origem"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Motivo da saída</FormLabel>
+                <Select value={field.value} onValueChange={(value) => field.onChange(value)}>
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue>
+                        {() => (field.value === "perda" ? "Perda" : "Ajuste manual")}
+                      </SelectValue>
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="manual">Ajuste manual</SelectItem>
+                    <SelectItem value="perda">Perda</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <FormField
           control={form.control}

@@ -52,26 +52,35 @@ function VendasList({ caixaId }: { caixaId: string }) {
         <span className="font-medium text-foreground">{formatCurrency(total)}</span>
       </div>
       <div className="max-h-80 divide-y divide-border overflow-y-auto">
-        {vendas.map((venda) => (
-          <div key={venda.id} className="flex items-center justify-between py-2 text-sm">
-            <div className="flex items-center gap-1.5">
-              <span className="text-foreground">{formatTime(venda.created_at)}</span>
-              <span className="text-xs text-muted-foreground">
-                {venda.customers?.full_name ?? "Venda avulsa"}
-              </span>
-              {venda.status === "cancelada" && <Badge variant="outline">Cancelada</Badge>}
+        {vendas.map((venda) => {
+          const formaPagamento =
+            [...new Set(venda.venda_pagamentos.map((p) => p.formas_pagamento?.nome ?? "—"))].join(
+              " + ",
+            ) || "—";
+          return (
+            <div key={venda.id} className="flex items-center justify-between py-2 text-sm">
+              <div className="flex items-center gap-1.5">
+                <span className="text-foreground">{formatTime(venda.created_at)}</span>
+                <span className="text-xs text-muted-foreground">
+                  {venda.customers?.full_name ?? "Venda avulsa"}
+                </span>
+                {venda.status === "cancelada" && <Badge variant="outline">Cancelada</Badge>}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">{formaPagamento}</span>
+                <span
+                  className={
+                    venda.status === "cancelada"
+                      ? "font-medium text-muted-foreground line-through"
+                      : "font-medium text-foreground"
+                  }
+                >
+                  {formatCurrency(venda.total)}
+                </span>
+              </div>
             </div>
-            <span
-              className={
-                venda.status === "cancelada"
-                  ? "font-medium text-muted-foreground line-through"
-                  : "font-medium text-foreground"
-              }
-            >
-              {formatCurrency(venda.total)}
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

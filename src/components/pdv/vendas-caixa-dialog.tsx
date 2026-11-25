@@ -22,8 +22,15 @@ function formatTime(value: string) {
   return new Date(value).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }
 
+function temFormaPagamento(venda: VendaCaixa, dinheiro: boolean) {
+  return venda.venda_pagamentos.some((p) =>
+    dinheiro ? p.formas_pagamento?.nome === "Dinheiro" : p.formas_pagamento?.nome !== "Dinheiro",
+  );
+}
+
 function VendasList({ caixaId }: { caixaId: string }) {
   const [vendas, setVendas] = useState<VendaCaixa[] | null>(null);
+  const [filtro, setFiltro] = useState<"todas" | "dinheiro" | "outras">("todas");
 
   useEffect(() => {
     getVendasCaixa(caixaId).then((data) => setVendas(data as unknown as VendaCaixa[]));
@@ -42,45 +49,81 @@ function VendasList({ caixaId }: { caixaId: string }) {
     );
   }
 
-  const concluidas = vendas.filter((v) => v.status === "concluida");
+  const filtradas =
+    filtro === "todas"
+      ? vendas
+      : vendas.filter((v) => temFormaPagamento(v, filtro === "dinheiro"));
+  const concluidas = filtradas.filter((v) => v.status === "concluida");
   const total = concluidas.reduce((sum, v) => sum + v.total, 0);
 
   return (
     <div>
+      <div className="mb-3 flex gap-1.5">
+        <Button
+          type="button"
+          variant={filtro === "todas" ? "secondary" : "ghost"}
+          size="sm"
+          onClick={() => setFiltro("todas")}
+        >
+          Todas
+        </Button>
+        <Button
+          type="button"
+          variant={filtro === "dinheiro" ? "secondary" : "ghost"}
+          size="sm"
+          onClick={() => setFiltro("dinheiro")}
+        >
+          Dinheiro
+        </Button>
+        <Button
+          type="button"
+          variant={filtro === "outras" ? "secondary" : "ghost"}
+          size="sm"
+          onClick={() => setFiltro("outras")}
+        >
+          Outras formas
+        </Button>
+      </div>
       <div className="mb-3 flex items-center justify-between text-sm">
         <span className="text-muted-foreground">{concluidas.length} venda(s)</span>
         <span className="font-medium text-foreground">{formatCurrency(total)}</span>
       </div>
       <div className="max-h-80 divide-y divide-border overflow-y-auto">
-        {vendas.map((venda) => {
-          const formaPagamento =
-            [...new Set(venda.venda_pagamentos.map((p) => p.formas_pagamento?.nome ?? "—"))].join(
-              " + ",
-            ) || "—";
-          return (
-            <div key={venda.id} className="flex items-center justify-between py-2 text-sm">
-              <div className="flex items-center gap-1.5">
-                <span className="text-foreground">{formatTime(venda.created_at)}</span>
-                <span className="text-xs text-muted-foreground">
-                  {venda.customers?.full_name ?? "Venda avulsa"}
-                </span>
-                {venda.status === "cancelada" && <Badge variant="outline">Cancelada</Badge>}
+        {filtradas.length === 0 ? (
+          <p className="py-4 text-center text-sm text-muted-foreground">
+            Nenhuma venda com essa forma de pagamento.
+          </p>
+        ) : (
+          filtradas.map((venda) => {
+            const formaPagamento =
+              [
+                ...new Set(venda.venda_pagamentos.map((p) => p.formas_pagamento?.nome ?? "—")),
+              ].join(" + ") || "—";
+            return (
+              <div key={venda.id} className="flex items-center justify-between py-2 text-sm">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-foreground">{formatTime(venda.created_at)}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {venda.customers?.full_name ?? "Venda avulsa"}
+                  </span>
+                  {venda.status === "cancelada" && <Badge variant="outline">Cancelada</Badge>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">{formaPagamento}</span>
+                  <span
+                    className={
+                      venda.status === "cancelada"
+                        ? "font-medium text-muted-foreground line-through"
+                        : "font-medium text-foreground"
+                    }
+                  >
+                    {formatCurrency(venda.total)}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">{formaPagamento}</span>
-                <span
-                  className={
-                    venda.status === "cancelada"
-                      ? "font-medium text-muted-foreground line-through"
-                      : "font-medium text-foreground"
-                  }
-                >
-                  {formatCurrency(venda.total)}
-                </span>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
     </div>
   );

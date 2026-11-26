@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MovementDialog } from "@/components/estoque/movement-dialog";
 import { EstoqueSituacao } from "@/components/estoque/estoque-situacao";
 import { createClient } from "@/lib/supabase/server";
+import { unwrapRelacao } from "@/lib/supabase/relations";
 import { getProfile } from "@/server/auth/session";
 import type { Movimentacao, ProdutoComEstoque } from "@/modules/estoque/types";
 
@@ -40,7 +41,7 @@ export default async function EstoquePage() {
   const produtosComEstoque: ProdutoComEstoque[] = (variantes ?? []).map((v) => ({
     id: v.id,
     nome: v.nome,
-    produto_nome: v.produtos[0]?.nome ?? "—",
+    produto_nome: unwrapRelacao(v.produtos)?.nome ?? "—",
     codigo_interno: v.codigo_interno,
     estoque_minimo: v.estoque_minimo,
     validade: v.validade,
@@ -52,7 +53,7 @@ export default async function EstoquePage() {
     id: v.id,
     nome: v.nome,
     codigo_interno: v.codigo_interno,
-    produto_nome: v.produtos[0]?.nome ?? "—",
+    produto_nome: unwrapRelacao(v.produtos)?.nome ?? "—",
   }));
 
   return (

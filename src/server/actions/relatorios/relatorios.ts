@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { unwrapRelacao } from "@/lib/supabase/relations";
 import { requireRole } from "@/server/auth/session";
 import { buildTotaisPorCaixa } from "@/lib/caixa/totais";
 
@@ -90,7 +91,7 @@ export async function getEstoqueAtualDetalhado() {
   return (variantes ?? []).map((v) => ({
     id: v.id,
     nome: v.nome,
-    produto_nome: v.produtos[0]?.nome ?? "—",
+    produto_nome: unwrapRelacao(v.produtos)?.nome ?? "—",
     codigo_interno: v.codigo_interno,
     estoque_minimo: v.estoque_minimo,
     validade: v.validade,

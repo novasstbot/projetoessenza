@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { ComprasList } from "@/components/compras/compras-list";
 import { NovaCompraDialog } from "@/components/compras/nova-compra-dialog";
 import { createClient } from "@/lib/supabase/server";
+import { unwrapRelacao } from "@/lib/supabase/relations";
 import { getProfile } from "@/server/auth/session";
 import type { Compra } from "@/modules/compras/types";
 
@@ -29,7 +30,7 @@ export default async function ComprasPage() {
   const produtosCompra = (produtos ?? []).map((v) => ({
     id: v.id,
     nome: v.nome,
-    produto_nome: v.produtos[0]?.nome ?? "—",
+    produto_nome: unwrapRelacao(v.produtos)?.nome ?? "—",
     codigo_interno: v.codigo_interno,
     custo: v.custo,
   }));

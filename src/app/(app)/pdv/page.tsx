@@ -3,6 +3,7 @@ import { OpenCaixaCard } from "@/components/pdv/open-caixa-card";
 import { PdvScreen } from "@/components/pdv/pdv-screen";
 import { createClient } from "@/lib/supabase/server";
 import { resolverThumb } from "@/lib/produtos/imagem";
+import { unwrapRelacao } from "@/lib/supabase/relations";
 import type { ProdutoPdv } from "@/modules/pdv/types";
 
 export default async function PdvPage() {
@@ -49,11 +50,8 @@ export default async function PdvPage() {
   const produtosPdv: ProdutoPdv[] = (variantes ?? []).map((v) => {
     const codigos = v.produto_codigos_barra;
     const codigoPrincipal = codigos.find((c) => c.principal) ?? codigos[0];
-    // `categorias` aqui pode vir como objeto único ou como array de 1 item,
-    // dependendo de como o supabase-js infere o embed aninhado dentro de um
-    // `!inner` sem types gerados do banco — tratamos os dois casos.
-    const categoriaDoProduto = v.produtos[0]?.categorias;
-    const categoria = Array.isArray(categoriaDoProduto) ? categoriaDoProduto[0] : categoriaDoProduto;
+    const produtoDaVariante = unwrapRelacao(v.produtos);
+    const categoriaDoProduto = unwrapRelacao(produtoDaVariante?.categorias);
     return {
       id: v.id,
       nome: v.nome,
@@ -63,8 +61,8 @@ export default async function PdvPage() {
       quantidade_atual: estoquePorVariante.get(v.id) ?? 0,
       imagem_thumb: resolverThumb(
         { variante_imagens: v.variante_imagens },
-        { produto_imagens: v.produtos[0]?.produto_imagens ?? [] },
-        categoria ?? null,
+        { produto_imagens: produtoDaVariante?.produto_imagens ?? [] },
+        categoriaDoProduto,
       ),
     };
   });

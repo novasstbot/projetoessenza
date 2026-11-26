@@ -29,11 +29,18 @@ export function CartTable({
     <div className="divide-y divide-border">
       {items.map(({ produto, quantidade }) => (
         <div key={produto.id} className="flex items-center justify-between gap-3 py-3">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-foreground">{produto.nome}</p>
-            <p className="text-xs text-muted-foreground">
-              {formatCurrency(produto.preco_venda)} un.
-            </p>
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded border border-border bg-muted">
+              {produto.imagem_thumb && (
+                <img src={produto.imagem_thumb} alt="" className="size-full object-contain" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-foreground">{produto.nome}</p>
+              <p className="text-xs text-muted-foreground">
+                {formatCurrency(produto.preco_venda)} un.
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-1.5">

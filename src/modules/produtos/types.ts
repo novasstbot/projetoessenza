@@ -1,6 +1,8 @@
 export type Categoria = {
   id: string;
   nome: string;
+  imagem_thumb?: string | null;
+  imagem_medium?: string | null;
 };
 
 export type Marca = {

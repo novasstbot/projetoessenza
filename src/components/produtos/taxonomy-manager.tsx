@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Settings, Trash2, Plus } from "lucide-react";
@@ -21,18 +21,21 @@ import {
   createLinha,
   deleteLinha,
 } from "@/server/actions/produtos/taxonomies";
+import { CategoriaImagem } from "@/components/produtos/categoria-imagem";
 import type { Categoria, Marca, Linha } from "@/modules/produtos/types";
 
-function TaxonomyList({
+function TaxonomyList<T extends { id: string; nome: string }>({
   label,
   items,
   onCreate,
   onDelete,
+  renderExtra,
 }: {
   label: string;
-  items: { id: string; nome: string }[];
+  items: T[];
   onCreate: (nome: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  renderExtra?: (item: T) => ReactNode;
 }) {
   const router = useRouter();
   const [value, setValue] = useState("");
@@ -82,17 +85,20 @@ function TaxonomyList({
         {items.map((item) => (
           <li
             key={item.id}
-            className="flex items-center justify-between rounded-md px-2 py-1 text-sm hover:bg-muted"
+            className="flex items-center justify-between gap-2 rounded-md px-2 py-1 text-sm hover:bg-muted"
           >
-            {item.nome}
-            <button
-              type="button"
-              onClick={() => handleDelete(item.id)}
-              className="text-muted-foreground hover:text-destructive"
-              aria-label={`Remover ${item.nome}`}
-            >
-              <Trash2 className="size-3.5" />
-            </button>
+            <span className="truncate">{item.nome}</span>
+            <div className="flex items-center gap-1">
+              {renderExtra?.(item)}
+              <button
+                type="button"
+                onClick={() => handleDelete(item.id)}
+                className="text-muted-foreground hover:text-destructive"
+                aria-label={`Remover ${item.nome}`}
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            </div>
           </li>
         ))}
       </ul>
@@ -131,6 +137,7 @@ export function TaxonomyManager({
             items={categorias}
             onCreate={(nome) => createCategoria({ nome })}
             onDelete={deleteCategoria}
+            renderExtra={(categoria) => <CategoriaImagem categoria={categoria} />}
           />
           <TaxonomyList
             label="Marcas"

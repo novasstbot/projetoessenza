@@ -156,6 +156,102 @@ export async function removeImagem(
   revalidatePath("/produtos");
 }
 
+// Categoria tem no máximo 1 imagem (não é lista com "principal" como
+// produto/variante), então os paths vivem direto em colunas de `categorias`
+// em vez de uma tabela filha.
+export async function uploadImagemCategoria(formData: FormData) {
+  await requireRole(["admin", "gerente"]);
+
+  const file = formData.get("file");
+  const categoriaId = formData.get("categoriaId") as string | null;
+
+  if (!(file instanceof File) || !categoriaId) {
+    throw new Error("Dados inválidos.");
+  }
+  if (!TIPOS_ACEITOS.includes(file.type)) {
+    throw new Error("Formato não suportado. Use JPEG, PNG ou WebP.");
+  }
+  if (file.size > TAMANHO_MAXIMO) {
+    throw new Error("Imagem muito grande (máximo 10MB).");
+  }
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const { thumb, media } = await processarImagem(buffer);
+
+  const id = crypto.randomUUID();
+  const pathThumb = `categorias/${categoriaId}/${id}-thumb.webp`;
+  const pathMedium = `categorias/${categoriaId}/${id}-medium.webp`;
+
+  const supabase = await createClient();
+  const storage = supabase.storage.from("produto-imagens");
+
+  const { data: categoriaAtual, error: fetchError } = await supabase
+    .from("categorias")
+    .select("imagem_thumb, imagem_medium")
+    .eq("id", categoriaId)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  const { error: uploadThumbError } = await storage.upload(pathThumb, thumb, {
+    contentType: "image/webp",
+  });
+  if (uploadThumbError) throw new Error(uploadThumbError.message);
+
+  const { error: uploadMediaError } = await storage.upload(pathMedium, media, {
+    contentType: "image/webp",
+  });
+  if (uploadMediaError) {
+    await storage.remove([pathThumb]);
+    throw new Error(uploadMediaError.message);
+  }
+
+  const { error: updateError } = await supabase
+    .from("categorias")
+    .update({ imagem_thumb: pathThumb, imagem_medium: pathMedium })
+    .eq("id", categoriaId);
+
+  if (updateError) {
+    await storage.remove([pathThumb, pathMedium]);
+    throw new Error(updateError.message);
+  }
+
+  const pathsAntigos = [categoriaAtual.imagem_thumb, categoriaAtual.imagem_medium].filter(
+    (p): p is string => Boolean(p),
+  );
+  if (pathsAntigos.length > 0) {
+    await storage.remove(pathsAntigos);
+  }
+
+  revalidatePath("/produtos");
+}
+
+export async function removeImagemCategoria(categoriaId: string) {
+  await requireRole(["admin", "gerente"]);
+
+  const supabase = await createClient();
+  const { data: categoriaAtual, error: fetchError } = await supabase
+    .from("categorias")
+    .select("imagem_thumb, imagem_medium")
+    .eq("id", categoriaId)
+    .single();
+  if (fetchError) throw new Error(fetchError.message);
+
+  const { error: updateError } = await supabase
+    .from("categorias")
+    .update({ imagem_thumb: null, imagem_medium: null })
+    .eq("id", categoriaId);
+  if (updateError) throw new Error(updateError.message);
+
+  const pathsAntigos = [categoriaAtual.imagem_thumb, categoriaAtual.imagem_medium].filter(
+    (p): p is string => Boolean(p),
+  );
+  if (pathsAntigos.length > 0) {
+    await supabase.storage.from("produto-imagens").remove(pathsAntigos);
+  }
+
+  revalidatePath("/produtos");
+}
+
 export async function setImagemPrincipal(
   id: string,
   tipo: TipoEntidadeImagem,

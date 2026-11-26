@@ -46,3 +46,6 @@ supabase/.branches/
 
 .vercel
 .env*
+
+# imagens de origem pra upload manual (ficam só no Storage depois)
+/categoria_*.png

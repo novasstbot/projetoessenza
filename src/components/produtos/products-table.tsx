@@ -162,7 +162,7 @@ export function ProductsTable({
               filtered.map((produto) => {
                 const variante = produto.produto_variantes[0];
                 const codigoEan = variante?.produto_codigos_barra.find((c) => c.principal)?.codigo;
-                const thumb = resolverThumb(variante, produto);
+                const thumb = resolverThumb(variante, produto, produto.categorias);
                 return (
                   <tr key={produto.id} className={!produto.ativo ? "opacity-60" : undefined}>
                     <td className="px-4 py-2.5 font-medium text-foreground">

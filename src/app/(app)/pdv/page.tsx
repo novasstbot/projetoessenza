@@ -28,7 +28,7 @@ export default async function PdvPage() {
       supabase
         .from("produto_variantes")
         .select(
-          "id, nome, codigo_interno, preco_venda, produto_codigos_barra(codigo, principal), variante_imagens(id, path_thumb, principal, ordem), produtos!inner(ativo, produto_imagens(id, path_thumb, principal, ordem))",
+          "id, nome, codigo_interno, preco_venda, produto_codigos_barra(codigo, principal), variante_imagens(id, path_thumb, principal, ordem), produtos!inner(ativo, produto_imagens(id, path_thumb, principal, ordem), categorias(imagem_thumb))",
         )
         .eq("ativo", true)
         .eq("produtos.ativo", true)
@@ -59,6 +59,7 @@ export default async function PdvPage() {
       imagem_thumb: resolverThumb(
         { variante_imagens: v.variante_imagens },
         { produto_imagens: v.produtos[0]?.produto_imagens ?? [] },
+        v.produtos[0]?.categorias[0] ?? null,
       ),
     };
   });

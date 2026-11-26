@@ -1,4 +1,4 @@
-import { Lock } from "lucide-react";
+import { ArrowUpCircle, ArrowDownCircle, Lock } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { ContasPagarSection } from "@/components/financeiro/contas-pagar-section";
@@ -72,19 +72,25 @@ export default async function FinanceiroPage() {
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Card>
-          <CardContent className="py-4">
-            <p className="text-xs text-muted-foreground">Total a pagar (pendente)</p>
-            <p className="text-xl font-semibold text-foreground">
-              {formatCurrency(totalPendentePagar)}
-            </p>
+          <CardContent className="flex items-center gap-3 py-4">
+            <ArrowUpCircle className="size-5 shrink-0 text-destructive" />
+            <div>
+              <p className="text-xs text-muted-foreground">Total a pagar (pendente)</p>
+              <p className="text-xl font-semibold text-foreground">
+                {formatCurrency(totalPendentePagar)}
+              </p>
+            </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="py-4">
-            <p className="text-xs text-muted-foreground">Total a receber (pendente)</p>
-            <p className="text-xl font-semibold text-foreground">
-              {formatCurrency(totalPendenteReceber)}
-            </p>
+          <CardContent className="flex items-center gap-3 py-4">
+            <ArrowDownCircle className="size-5 shrink-0 text-gold" />
+            <div>
+              <p className="text-xs text-muted-foreground">Total a receber (pendente)</p>
+              <p className="text-xl font-semibold text-foreground">
+                {formatCurrency(totalPendenteReceber)}
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

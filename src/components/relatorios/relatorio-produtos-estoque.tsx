@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDownUp } from "lucide-react";
+import { ArrowDownUp, PackageSearch, Wallet } from "lucide-react";
 import { DateRangeFilter, type DateRange } from "@/components/ui/date-range-filter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -131,21 +131,29 @@ export function RelatorioProdutosEstoque({
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:max-w-xl">
             <Card>
-              <CardContent className="py-4">
-                <p className="text-xs text-muted-foreground">Valor total do estoque (custo)</p>
-                <p className="text-xl font-semibold text-foreground">
-                  {formatCurrency(valorTotalEstoqueCusto)}
-                </p>
-                <p className="text-xs text-muted-foreground">Custo de aquisição × quantidade atual</p>
+              <CardContent className="flex items-center gap-3 py-4">
+                <PackageSearch className="size-5 shrink-0 text-gold" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Valor total do estoque (custo)</p>
+                  <p className="text-xl font-semibold text-foreground">
+                    {formatCurrency(valorTotalEstoqueCusto)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Custo de aquisição × quantidade atual
+                  </p>
+                </div>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="py-4">
-                <p className="text-xs text-muted-foreground">Valor total do estoque (venda)</p>
-                <p className="text-xl font-semibold text-foreground">
-                  {formatCurrency(valorTotalEstoqueVenda)}
-                </p>
-                <p className="text-xs text-muted-foreground">Preço de venda × quantidade atual</p>
+              <CardContent className="flex items-center gap-3 py-4">
+                <Wallet className="size-5 shrink-0 text-gold" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Valor total do estoque (venda)</p>
+                  <p className="text-xl font-semibold text-foreground">
+                    {formatCurrency(valorTotalEstoqueVenda)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Preço de venda × quantidade atual</p>
+                </div>
               </CardContent>
             </Card>
           </div>

@@ -14,7 +14,7 @@ export default async function ProdutosPage() {
       supabase
         .from("produtos")
         .select(
-          "id, nome, descricao, fabricante, categoria_id, marca_id, linha_id, ativo, created_at, categorias(id, nome), marcas(id, nome), produto_linhas(id, nome), produto_variantes(id, produto_id, nome, codigo_interno, custo, preco_venda, estoque_minimo, validade, ativo, created_at, produto_codigos_barra(id, codigo, tipo, principal), produto_variante_atributos(id, atributo, valor))",
+          "id, nome, descricao, fabricante, categoria_id, marca_id, linha_id, ativo, created_at, categorias(id, nome), marcas(id, nome), produto_linhas(id, nome), produto_imagens(id, path_thumb, path_medium, principal, ordem), produto_variantes(id, produto_id, nome, codigo_interno, custo, preco_venda, estoque_minimo, validade, ativo, created_at, produto_codigos_barra(id, codigo, tipo, principal), produto_variante_atributos(id, atributo, valor), variante_imagens(id, path_thumb, path_medium, principal, ordem))",
         )
         .order("nome"),
       supabase.from("categorias").select("id, nome").order("nome"),

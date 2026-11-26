@@ -28,6 +28,7 @@
     "resend": "^6.39.0",
     "server-only": "^0.0.1",
     "shadcn": "^4.23.0",
+    "sharp": "^0.35.5",
     "sonner": "^2.0.8",
     "svix": "^2.11.0",
     "tailwind-merge": "^3.7.1",

@@ -10,6 +10,7 @@ export type ProdutoPdv = {
   codigo_ean: string | null;
   preco_venda: number;
   quantidade_atual: number;
+  imagem_thumb: string | null;
 };
 
 export type CartItem = {

@@ -41,6 +41,14 @@ export type VarianteAtributo = {
   valor: string;
 };
 
+export type Imagem = {
+  id: string;
+  path_thumb: string;
+  path_medium: string;
+  principal: boolean;
+  ordem: number;
+};
+
 export type Variante = {
   id: string;
   produto_id: string;
@@ -57,10 +65,12 @@ export type Variante = {
 export type VarianteComCodigos = Variante & {
   produto_codigos_barra: CodigoBarra[];
   produto_variante_atributos: VarianteAtributo[];
+  variante_imagens: Imagem[];
 };
 
 export type ProdutoComVariantes = Produto & {
   produto_variantes: VarianteComCodigos[];
+  produto_imagens: Imagem[];
 };
 
 export type VarianteDetalhada = VarianteComCodigos & { quantidade_atual: number };

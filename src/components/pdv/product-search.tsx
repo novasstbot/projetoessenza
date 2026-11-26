@@ -86,14 +86,21 @@ export function ProductSearch({
                 key={produto.id}
                 type="button"
                 onClick={() => add(produto)}
-                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-muted"
+                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
               >
-                <span>
-                  {produto.nome}
-                  <span className="block text-xs text-muted-foreground">
-                    {produto.codigo_interno}
-                    {produto.codigo_ean ? ` · EAN ${produto.codigo_ean}` : ""} · estoque{" "}
-                    {produto.quantidade_atual}
+                <span className="flex items-center gap-2">
+                  <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded border border-border bg-muted">
+                    {produto.imagem_thumb && (
+                      <img src={produto.imagem_thumb} alt="" className="size-full object-contain" />
+                    )}
+                  </span>
+                  <span>
+                    {produto.nome}
+                    <span className="block text-xs text-muted-foreground">
+                      {produto.codigo_interno}
+                      {produto.codigo_ean ? ` · EAN ${produto.codigo_ean}` : ""} · estoque{" "}
+                      {produto.quantidade_atual}
+                    </span>
                   </span>
                 </span>
                 <span className="font-medium text-foreground">

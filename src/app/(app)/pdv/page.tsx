@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { OpenCaixaCard } from "@/components/pdv/open-caixa-card";
 import { PdvScreen } from "@/components/pdv/pdv-screen";
 import { createClient } from "@/lib/supabase/server";
+import { resolverThumb } from "@/lib/produtos/imagem";
 import type { ProdutoPdv } from "@/modules/pdv/types";
 
 export default async function PdvPage() {
@@ -27,7 +28,7 @@ export default async function PdvPage() {
       supabase
         .from("produto_variantes")
         .select(
-          "id, nome, codigo_interno, preco_venda, produto_codigos_barra(codigo, principal), produtos!inner(ativo)",
+          "id, nome, codigo_interno, preco_venda, produto_codigos_barra(codigo, principal), variante_imagens(id, path_thumb, principal, ordem), produtos!inner(ativo, produto_imagens(id, path_thumb, principal, ordem))",
         )
         .eq("ativo", true)
         .eq("produtos.ativo", true)
@@ -55,6 +56,10 @@ export default async function PdvPage() {
       codigo_ean: codigoPrincipal?.codigo ?? null,
       preco_venda: v.preco_venda,
       quantidade_atual: estoquePorVariante.get(v.id) ?? 0,
+      imagem_thumb: resolverThumb(
+        { variante_imagens: v.variante_imagens },
+        { produto_imagens: v.produtos[0]?.produto_imagens ?? [] },
+      ),
     };
   });
 

@@ -27,6 +27,7 @@ import {
   setVarianteAtributo,
   removeVarianteAtributo,
 } from "@/server/actions/produtos/variantes";
+import { ImagemManager } from "@/components/produtos/imagem-manager";
 import { varianteSchema, type VarianteFormValues } from "@/modules/produtos/schemas";
 import type { VarianteDetalhada } from "@/modules/produtos/types";
 
@@ -324,6 +325,15 @@ export function VariantesTab({
 
                 <div className="mt-2">
                   <AtributosEditor produtoId={produtoId} variante={variante} />
+                </div>
+
+                <div className="mt-2">
+                  <ImagemManager
+                    tipo="variante"
+                    entidadeId={variante.id}
+                    produtoId={produtoId}
+                    imagens={variante.variante_imagens}
+                  />
                 </div>
 
                 <div className="mt-2 flex gap-1">

@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toggleProdutoAtivo } from "@/server/actions/produtos/products";
+import { resolverThumb } from "@/lib/produtos/imagem";
 import type { Categoria, Marca, ProdutoComVariantes } from "@/modules/produtos/types";
 
 const ALL = "all";
@@ -161,15 +162,23 @@ export function ProductsTable({
               filtered.map((produto) => {
                 const variante = produto.produto_variantes[0];
                 const codigoEan = variante?.produto_codigos_barra.find((c) => c.principal)?.codigo;
+                const thumb = resolverThumb(variante, produto);
                 return (
                   <tr key={produto.id} className={!produto.ativo ? "opacity-60" : undefined}>
                     <td className="px-4 py-2.5 font-medium text-foreground">
-                      {produto.nome}
-                      {produto.produto_variantes.length > 1 && (
-                        <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                          ({produto.produto_variantes.length} variações)
+                      <div className="flex items-center gap-2">
+                        <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded border border-border bg-muted">
+                          {thumb && <img src={thumb} alt="" className="size-full object-contain" />}
+                        </div>
+                        <span>
+                          {produto.nome}
+                          {produto.produto_variantes.length > 1 && (
+                            <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                              ({produto.produto_variantes.length} variações)
+                            </span>
+                          )}
                         </span>
-                      )}
+                      </div>
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground">
                       {variante?.codigo_interno ?? "—"}

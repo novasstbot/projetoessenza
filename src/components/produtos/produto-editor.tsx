@@ -26,6 +26,7 @@ import {
 import { VariantesTab } from "@/components/produtos/variantes-tab";
 import { CodigosBarraTab } from "@/components/produtos/codigos-barra-tab";
 import { HistoricoTab } from "@/components/produtos/historico-tab";
+import { ImagemManager } from "@/components/produtos/imagem-manager";
 import { updateProdutoPrincipal, toggleProdutoAtivo } from "@/server/actions/produtos/products";
 import { produtoSchema, type ProdutoFormValues } from "@/modules/produtos/schemas";
 import type {
@@ -235,6 +236,18 @@ function DadosGeraisForm({
           {form.formState.isSubmitting ? "Salvando..." : "Salvar alterações"}
         </Button>
       </form>
+
+      <div className="mt-6 max-w-2xl">
+        <p className="text-sm font-medium text-foreground">Imagens do produto</p>
+        <div className="mt-2">
+          <ImagemManager
+            tipo="produto"
+            entidadeId={produto.id}
+            produtoId={produto.id}
+            imagens={produto.produto_imagens}
+          />
+        </div>
+      </div>
     </Form>
   );
 }

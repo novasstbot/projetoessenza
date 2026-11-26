@@ -92,13 +92,15 @@ export function ClientesTable({
                   <tr key={cliente.id} className={!cliente.ativo ? "opacity-60" : undefined}>
                     <td className="px-4 py-2.5 font-medium text-foreground">
                       {cliente.full_name}
+                      {cliente.cpf_cnpj && (
+                        <span className="block text-xs font-normal text-muted-foreground">
+                          {cliente.cpf_cnpj}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground">
                       {cliente.email ?? "—"}
                       {cliente.phone && <span className="block text-xs">{cliente.phone}</span>}
-                      {cliente.cpf_cnpj && (
-                        <span className="block text-xs">{cliente.cpf_cnpj}</span>
-                      )}
                     </td>
                     <td className="px-4 py-2.5">
                       <Badge variant={optIn ? "secondary" : "outline"} className="gap-1">

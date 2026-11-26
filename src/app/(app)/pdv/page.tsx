@@ -22,14 +22,17 @@ export default async function PdvPage() {
     );
   }
 
-  const [{ data: produtos }, { data: estoqueAtual }, { data: formasPagamento }, { data: clientes }] =
+  const [{ data: variantes }, { data: estoqueAtual }, { data: formasPagamento }, { data: clientes }] =
     await Promise.all([
       supabase
-        .from("produtos")
-        .select("id, nome, codigo_interno, codigo_ean, preco_venda")
+        .from("produto_variantes")
+        .select(
+          "id, nome, codigo_interno, preco_venda, produto_codigos_barra(codigo, principal), produtos!inner(ativo)",
+        )
         .eq("ativo", true)
+        .eq("produtos.ativo", true)
         .order("nome"),
-      supabase.from("estoque_atual").select("produto_id, quantidade_atual"),
+      supabase.from("estoque_atual").select("variante_id, quantidade_atual"),
       supabase.from("formas_pagamento").select("id, nome").eq("ativo", true).order("nome"),
       supabase
         .from("customers")
@@ -38,14 +41,22 @@ export default async function PdvPage() {
         .order("full_name"),
     ]);
 
-  const estoquePorProduto = new Map(
-    (estoqueAtual ?? []).map((item) => [item.produto_id, item.quantidade_atual]),
+  const estoquePorVariante = new Map(
+    (estoqueAtual ?? []).map((item) => [item.variante_id, item.quantidade_atual]),
   );
 
-  const produtosPdv: ProdutoPdv[] = (produtos ?? []).map((p) => ({
-    ...p,
-    quantidade_atual: estoquePorProduto.get(p.id) ?? 0,
-  }));
+  const produtosPdv: ProdutoPdv[] = (variantes ?? []).map((v) => {
+    const codigos = v.produto_codigos_barra;
+    const codigoPrincipal = codigos.find((c) => c.principal) ?? codigos[0];
+    return {
+      id: v.id,
+      nome: v.nome,
+      codigo_interno: v.codigo_interno,
+      codigo_ean: codigoPrincipal?.codigo ?? null,
+      preco_venda: v.preco_venda,
+      quantidade_atual: estoquePorVariante.get(v.id) ?? 0,
+    };
+  });
 
   return (
     <div>

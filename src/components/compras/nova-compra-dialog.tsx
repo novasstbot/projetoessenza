@@ -56,7 +56,12 @@ function NovaCompraForm({
     const t = term.trim().toLowerCase();
     if (!t) return [];
     return produtos
-      .filter((p) => p.nome.toLowerCase().includes(t) || p.codigo_interno.toLowerCase().includes(t))
+      .filter(
+        (p) =>
+          p.nome.toLowerCase().includes(t) ||
+          p.produto_nome.toLowerCase().includes(t) ||
+          p.codigo_interno.toLowerCase().includes(t),
+      )
       .slice(0, 6);
   }, [produtos, term]);
 
@@ -103,7 +108,7 @@ function NovaCompraForm({
         vencimentoPagamento,
         parcelas,
         itens: items.map((i) => ({
-          produto_id: i.produto.id,
+          variante_id: i.produto.id,
           quantidade: i.quantidade,
           custo_unitario: i.custo_unitario,
         })),
@@ -158,7 +163,9 @@ function NovaCompraForm({
                 onClick={() => addProduto(produto)}
                 className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-muted"
               >
-                <span>{produto.nome}</span>
+                <span>
+                  {produto.produto_nome} — {produto.nome}
+                </span>
                 <span className="text-xs text-muted-foreground">
                   custo atual {formatCurrency(produto.custo)}
                 </span>

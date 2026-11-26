@@ -10,7 +10,7 @@ export const novaCompraSchema = z
     itens: z
       .array(
         z.object({
-          produto_id: z.string().uuid(),
+          variante_id: z.string().uuid(),
           quantidade: z.number().int().positive(),
           custo_unitario: z.number().min(0),
         }),

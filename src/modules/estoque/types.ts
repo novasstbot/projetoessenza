@@ -9,9 +9,13 @@ export const movimentacaoOrigemLabels: Record<MovimentacaoOrigem, string> = {
   perda: "Perda",
 };
 
+// Representa uma variação de produto (o estoque pertence à variação, nunca
+// só ao produto principal). produto_nome é o nome do produto principal, só
+// pra dar contexto na tela.
 export type ProdutoComEstoque = {
   id: string;
   nome: string;
+  produto_nome: string;
   codigo_interno: string;
   estoque_minimo: number;
   validade: string | null;
@@ -25,13 +29,13 @@ export const DIAS_PROXIMO_DA_VALIDADE = 30;
 
 export type Movimentacao = {
   id: string;
-  produto_id: string;
+  variante_id: string;
   tipo: MovimentacaoTipo;
   quantidade: number;
   motivo: string;
   origem: MovimentacaoOrigem;
   created_at: string;
-  produtos: { nome: string; codigo_interno: string } | null;
+  produto_variantes: { nome: string; codigo_interno: string } | null;
   profiles: { full_name: string | null } | null;
 };
 
@@ -39,11 +43,11 @@ export type ProdutoEstoqueDetalhado = ProdutoComEstoque & { custo: number };
 
 export type MovimentacaoEstoquePeriodo = {
   id: string;
-  produto_id: string;
+  variante_id: string;
   tipo: MovimentacaoTipo;
   quantidade: number;
   motivo: string;
   origem: MovimentacaoOrigem;
   created_at: string;
-  produtos: { nome: string; codigo_interno: string } | null;
+  produto_variantes: { nome: string; codigo_interno: string } | null;
 };

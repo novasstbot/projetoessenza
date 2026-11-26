@@ -14,7 +14,7 @@ export const finalizarVendaSchema = z.object({
   itens: z
     .array(
       z.object({
-        produto_id: z.string().uuid(),
+        variante_id: z.string().uuid(),
         quantidade: z.number().int().positive(),
       }),
     )

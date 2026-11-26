@@ -132,7 +132,7 @@ export function RelatorioVendasCaixa({
                           <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
                             {venda.itens_venda.map((item, i) => (
                               <li key={i}>
-                                {item.quantidade}× {item.produtos?.nome ?? "Produto removido"} —{" "}
+                                {item.quantidade}× {item.produto_variantes?.nome ?? "Produto removido"} —{" "}
                                 {formatCurrency(item.subtotal)}
                               </li>
                             ))}

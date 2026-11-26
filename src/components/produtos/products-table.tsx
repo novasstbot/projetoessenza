@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { ProductDialog } from "@/components/produtos/product-dialog";
 import { toggleProdutoAtivo } from "@/server/actions/produtos/products";
-import type { Categoria, Marca, Produto } from "@/modules/produtos/types";
+import type { Categoria, Linha, Marca, ProdutoComVariantes } from "@/modules/produtos/types";
 
 const ALL = "all";
 
@@ -28,11 +28,13 @@ export function ProductsTable({
   produtos,
   categorias,
   marcas,
+  linhas,
   canManage,
 }: {
-  produtos: Produto[];
+  produtos: ProdutoComVariantes[];
   categorias: Categoria[];
   marcas: Marca[];
+  linhas: Linha[];
   canManage: boolean;
 }) {
   const router = useRouter();
@@ -43,11 +45,13 @@ export function ProductsTable({
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
     return produtos.filter((produto) => {
+      const variante = produto.produto_variantes[0];
+      const codigoEan = variante?.produto_codigos_barra.find((c) => c.principal)?.codigo ?? "";
       const matchesTerm =
         !term ||
         produto.nome.toLowerCase().includes(term) ||
-        produto.codigo_interno.toLowerCase().includes(term) ||
-        (produto.codigo_ean ?? "").includes(term);
+        (variante?.codigo_interno.toLowerCase() ?? "").includes(term) ||
+        codigoEan.includes(term);
       const matchesCategoria =
         categoriaFilter === ALL || produto.categoria_id === categoriaFilter;
       const matchesMarca = marcaFilter === ALL || produto.marca_id === marcaFilter;
@@ -55,7 +59,7 @@ export function ProductsTable({
     });
   }, [produtos, search, categoriaFilter, marcaFilter]);
 
-  async function handleToggle(produto: Produto) {
+  async function handleToggle(produto: ProdutoComVariantes) {
     try {
       await toggleProdutoAtivo(produto.id, !produto.ativo);
       toast.success(produto.ativo ? "Produto desativado." : "Produto ativado.");
@@ -123,6 +127,7 @@ export function ProductsTable({
           <ProductDialog
             categorias={categorias}
             marcas={marcas}
+            linhas={linhas}
             trigger={
               <Button className="gap-1.5">
                 <Plus className="size-4" />
@@ -157,59 +162,69 @@ export function ProductsTable({
                 </td>
               </tr>
             ) : (
-              filtered.map((produto) => (
-                <tr key={produto.id} className={!produto.ativo ? "opacity-60" : undefined}>
-                  <td className="px-4 py-2.5 font-medium text-foreground">{produto.nome}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">
-                    {produto.codigo_interno}
-                    {produto.codigo_ean && (
-                      <span className="block text-xs">EAN {produto.codigo_ean}</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2.5 text-muted-foreground">
-                    {produto.categorias?.nome ?? "—"} / {produto.marcas?.nome ?? "—"}
-                  </td>
-                  <td className="px-4 py-2.5 text-muted-foreground">
-                    {formatCurrency(produto.custo)}
-                  </td>
-                  <td className="px-4 py-2.5 font-medium text-foreground">
-                    {formatCurrency(produto.preco_venda)}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <Badge variant={produto.ativo ? "secondary" : "outline"}>
-                      {produto.ativo ? "Ativo" : "Inativo"}
-                    </Badge>
-                  </td>
-                  {canManage && (
-                    <td className="px-4 py-2.5">
-                      <div className="flex justify-end gap-1">
-                        <ProductDialog
-                          categorias={categorias}
-                          marcas={marcas}
-                          produto={produto}
-                          trigger={
-                            <Button variant="ghost" size="icon-sm" aria-label="Editar">
-                              <Pencil className="size-4" />
-                            </Button>
-                          }
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label={produto.ativo ? "Desativar" : "Ativar"}
-                          onClick={() => handleToggle(produto)}
-                        >
-                          {produto.ativo ? (
-                            <EyeOff className="size-4" />
-                          ) : (
-                            <Eye className="size-4" />
-                          )}
-                        </Button>
-                      </div>
+              filtered.map((produto) => {
+                const variante = produto.produto_variantes[0];
+                const codigoEan = variante?.produto_codigos_barra.find((c) => c.principal)?.codigo;
+                return (
+                  <tr key={produto.id} className={!produto.ativo ? "opacity-60" : undefined}>
+                    <td className="px-4 py-2.5 font-medium text-foreground">
+                      {produto.nome}
+                      {produto.produto_variantes.length > 1 && (
+                        <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                          ({produto.produto_variantes.length} variações)
+                        </span>
+                      )}
                     </td>
-                  )}
-                </tr>
-              ))
+                    <td className="px-4 py-2.5 text-muted-foreground">
+                      {variante?.codigo_interno ?? "—"}
+                      {codigoEan && <span className="block text-xs">EAN {codigoEan}</span>}
+                    </td>
+                    <td className="px-4 py-2.5 text-muted-foreground">
+                      {produto.categorias?.nome ?? "—"} / {produto.marcas?.nome ?? "—"}
+                    </td>
+                    <td className="px-4 py-2.5 text-muted-foreground">
+                      {formatCurrency(variante?.custo ?? 0)}
+                    </td>
+                    <td className="px-4 py-2.5 font-medium text-foreground">
+                      {formatCurrency(variante?.preco_venda ?? 0)}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <Badge variant={produto.ativo ? "secondary" : "outline"}>
+                        {produto.ativo ? "Ativo" : "Inativo"}
+                      </Badge>
+                    </td>
+                    {canManage && (
+                      <td className="px-4 py-2.5">
+                        <div className="flex justify-end gap-1">
+                          <ProductDialog
+                            categorias={categorias}
+                            marcas={marcas}
+                            linhas={linhas}
+                            produto={produto}
+                            trigger={
+                              <Button variant="ghost" size="icon-sm" aria-label="Editar">
+                                <Pencil className="size-4" />
+                              </Button>
+                            }
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={produto.ativo ? "Desativar" : "Ativar"}
+                            onClick={() => handleToggle(produto)}
+                          >
+                            {produto.ativo ? (
+                              <EyeOff className="size-4" />
+                            ) : (
+                              <Eye className="size-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

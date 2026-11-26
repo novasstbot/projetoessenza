@@ -63,7 +63,7 @@ export function RelatorioProdutosEstoque({
       if (venda.status !== "concluida") continue;
       if (!dentroDoRange(venda.created_at, rangeVendidos)) continue;
       for (const item of venda.itens_venda) {
-        const nome = item.produtos?.nome ?? "Produto removido";
+        const nome = item.produto_variantes?.nome ?? "Produto removido";
         const atual = porProduto.get(nome) ?? { nome, quantidade: 0, faturamento: 0 };
         atual.quantidade += item.quantidade;
         atual.faturamento += item.subtotal;
@@ -260,7 +260,7 @@ export function RelatorioProdutosEstoque({
                         {formatDateTime(m.created_at)}
                       </td>
                       <td className="px-4 py-2.5 text-foreground">
-                        {m.produtos?.nome ?? "—"}
+                        {m.produto_variantes?.nome ?? "—"}
                       </td>
                       <td className="px-4 py-2.5 text-muted-foreground">
                         {movimentacaoOrigemLabels[m.origem]}

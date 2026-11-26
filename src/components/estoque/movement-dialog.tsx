@@ -13,9 +13,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { MovementForm } from "@/components/estoque/movement-form";
 
-type Produto = { id: string; nome: string; codigo_interno: string };
+type VarianteOption = { id: string; nome: string; codigo_interno: string; produto_nome: string };
 
-export function MovementDialog({ produtos }: { produtos: Produto[] }) {
+export function MovementDialog({ variantes }: { variantes: VarianteOption[] }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
@@ -34,7 +34,7 @@ export function MovementDialog({ produtos }: { produtos: Produto[] }) {
           <DialogTitle>Nova movimentação de estoque</DialogTitle>
         </DialogHeader>
         <MovementForm
-          produtos={produtos}
+          variantes={variantes}
           onSuccess={() => {
             setOpen(false);
             router.refresh();

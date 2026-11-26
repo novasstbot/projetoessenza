@@ -10,16 +10,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ProductForm } from "@/components/produtos/product-form";
-import type { Categoria, Marca, Produto } from "@/modules/produtos/types";
+import type { Categoria, Linha, Marca, ProdutoComVariantes } from "@/modules/produtos/types";
 
 type ProductDialogProps = {
   categorias: Categoria[];
   marcas: Marca[];
-  produto?: Produto;
+  linhas: Linha[];
+  produto?: ProdutoComVariantes;
   trigger: React.ReactNode;
 };
 
-export function ProductDialog({ categorias, marcas, produto, trigger }: ProductDialogProps) {
+export function ProductDialog({ categorias, marcas, linhas, produto, trigger }: ProductDialogProps) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
@@ -33,6 +34,7 @@ export function ProductDialog({ categorias, marcas, produto, trigger }: ProductD
         <ProductForm
           categorias={categorias}
           marcas={marcas}
+          linhas={linhas}
           produto={produto}
           onSuccess={() => {
             setOpen(false);

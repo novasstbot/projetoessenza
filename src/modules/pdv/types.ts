@@ -27,7 +27,7 @@ export type ItemVendaCaixa = {
   quantidade: number;
   preco_unitario: number;
   subtotal: number;
-  produtos: { nome: string } | null;
+  produto_variantes: { nome: string } | null;
 };
 
 export type PagamentoVendaCaixa = {

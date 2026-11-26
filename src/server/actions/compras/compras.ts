@@ -31,7 +31,7 @@ export async function criarCompra(values: NovaCompraValues) {
   const { error: itensError } = await supabase.from("itens_compra").insert(
     parsed.itens.map((item) => ({
       compra_id: compra.id,
-      produto_id: item.produto_id,
+      variante_id: item.variante_id,
       quantidade: item.quantidade,
       custo_unitario: item.custo_unitario,
     })),

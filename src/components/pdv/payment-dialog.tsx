@@ -311,7 +311,7 @@ function PaymentForm({
     setSubmitting(true);
     try {
       await finalizarVenda({
-        itens: items.map((i) => ({ produto_id: i.produto.id, quantidade: i.quantidade })),
+        itens: items.map((i) => ({ variante_id: i.produto.id, quantidade: i.quantidade })),
         pagamentos: lines.map((l) => ({
           forma_pagamento_id: l.forma_pagamento_id,
           valor: l.valor,

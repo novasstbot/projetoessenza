@@ -18,8 +18,21 @@ export default async function ComprasPage() {
       )
       .order("created_at", { ascending: false }),
     supabase.from("fornecedores").select("id, nome, cnpj_cpf, telefone, email, ativo").eq("ativo", true).order("nome"),
-    supabase.from("produtos").select("id, nome, codigo_interno, custo").eq("ativo", true).order("nome"),
+    supabase
+      .from("produto_variantes")
+      .select("id, nome, codigo_interno, custo, produtos!inner(nome, ativo)")
+      .eq("ativo", true)
+      .eq("produtos.ativo", true)
+      .order("nome"),
   ]);
+
+  const produtosCompra = (produtos ?? []).map((v) => ({
+    id: v.id,
+    nome: v.nome,
+    produto_nome: v.produtos[0]?.nome ?? "—",
+    codigo_interno: v.codigo_interno,
+    custo: v.custo,
+  }));
 
   return (
     <div>
@@ -28,7 +41,7 @@ export default async function ComprasPage() {
         description="Pedidos de compra e recebimento de mercadorias — recebido dá entrada automática no estoque."
         actions={
           canManage && (
-            <NovaCompraDialog fornecedores={fornecedores ?? []} produtos={produtos ?? []} />
+            <NovaCompraDialog fornecedores={fornecedores ?? []} produtos={produtosCompra} />
           )
         }
       />

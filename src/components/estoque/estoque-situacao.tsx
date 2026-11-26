@@ -140,7 +140,9 @@ export function EstoqueSituacao({ produtos }: { produtos: ProdutoComEstoque[] })
                   filtrados.map((produto) => (
                     <tr key={produto.id}>
                       <td className="px-4 py-2.5 font-medium text-foreground">
-                        {produto.nome}
+                        {produto.produto_nome !== produto.nome
+                          ? `${produto.produto_nome} — ${produto.nome}`
+                          : produto.nome}
                         <span className="block text-xs text-muted-foreground">
                           {produto.codigo_interno}
                         </span>

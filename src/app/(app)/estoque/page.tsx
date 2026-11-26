@@ -16,36 +16,43 @@ export default async function EstoquePage() {
   const canManage =
     profile?.role === "admin" || profile?.role === "gerente" || profile?.role === "estoquista";
 
-  const [{ data: produtos }, { data: estoqueAtual }, { data: movimentacoes }] = await Promise.all([
+  const [{ data: variantes }, { data: estoqueAtual }, { data: movimentacoes }] = await Promise.all([
     supabase
-      .from("produtos")
-      .select("id, nome, codigo_interno, estoque_minimo, validade")
+      .from("produto_variantes")
+      .select("id, nome, codigo_interno, estoque_minimo, validade, produtos!inner(nome, ativo)")
       .eq("ativo", true)
+      .eq("produtos.ativo", true)
       .order("nome"),
-    supabase.from("estoque_atual").select("produto_id, quantidade_atual"),
+    supabase.from("estoque_atual").select("variante_id, quantidade_atual"),
     supabase
       .from("movimentacoes_estoque")
       .select(
-        "id, produto_id, tipo, quantidade, motivo, origem, created_at, produtos(nome, codigo_interno), profiles(full_name)",
+        "id, variante_id, tipo, quantidade, motivo, origem, created_at, produto_variantes(nome, codigo_interno), profiles(full_name)",
       )
       .order("created_at", { ascending: false })
       .limit(30),
   ]);
 
-  const estoquePorProduto = new Map(
-    (estoqueAtual ?? []).map((item) => [item.produto_id, item.quantidade_atual]),
+  const estoquePorVariante = new Map(
+    (estoqueAtual ?? []).map((item) => [item.variante_id, item.quantidade_atual]),
   );
 
-  const produtosComEstoque: ProdutoComEstoque[] = (produtos ?? []).map((produto) => ({
-    ...produto,
-    quantidade_atual: estoquePorProduto.get(produto.id) ?? 0,
-    tem_movimentacao: estoquePorProduto.has(produto.id),
+  const produtosComEstoque: ProdutoComEstoque[] = (variantes ?? []).map((v) => ({
+    id: v.id,
+    nome: v.nome,
+    produto_nome: v.produtos[0]?.nome ?? "—",
+    codigo_interno: v.codigo_interno,
+    estoque_minimo: v.estoque_minimo,
+    validade: v.validade,
+    quantidade_atual: estoquePorVariante.get(v.id) ?? 0,
+    tem_movimentacao: estoquePorVariante.has(v.id),
   }));
 
-  const produtosList = (produtos ?? []).map((p) => ({
-    id: p.id,
-    nome: p.nome,
-    codigo_interno: p.codigo_interno,
+  const variantesList = (variantes ?? []).map((v) => ({
+    id: v.id,
+    nome: v.nome,
+    codigo_interno: v.codigo_interno,
+    produto_nome: v.produtos[0]?.nome ?? "—",
   }));
 
   return (
@@ -53,7 +60,7 @@ export default async function EstoquePage() {
       <PageHeader
         title="Estoque"
         description="Situação atual, estoque mínimo, validade e histórico de movimentações."
-        actions={canManage && <MovementDialog produtos={produtosList} />}
+        actions={canManage && <MovementDialog variantes={variantesList} />}
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
@@ -75,7 +82,7 @@ export default async function EstoquePage() {
                 <div key={mov.id} className="border-b border-border pb-2 text-sm last:border-0">
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-foreground">
-                      {mov.produtos?.nome ?? "—"}
+                      {mov.produto_variantes?.nome ?? "—"}
                     </span>
                     <Badge variant={mov.tipo === "entrada" ? "secondary" : "outline"}>
                       {mov.tipo === "entrada" ? "+" : "-"}

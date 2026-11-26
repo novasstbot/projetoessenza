@@ -18,8 +18,10 @@ import {
   deleteCategoria,
   createMarca,
   deleteMarca,
+  createLinha,
+  deleteLinha,
 } from "@/server/actions/produtos/taxonomies";
-import type { Categoria, Marca } from "@/modules/produtos/types";
+import type { Categoria, Marca, Linha } from "@/modules/produtos/types";
 
 function TaxonomyList({
   label,
@@ -101,9 +103,11 @@ function TaxonomyList({
 export function TaxonomyManager({
   categorias,
   marcas,
+  linhas,
 }: {
   categorias: Categoria[];
   marcas: Marca[];
+  linhas: Linha[];
 }) {
   const [open, setOpen] = useState(false);
 
@@ -113,13 +117,13 @@ export function TaxonomyManager({
         render={
           <Button variant="outline" className="gap-1.5">
             <Settings className="size-4" />
-            Categorias e marcas
+            Categorias, marcas e linhas
           </Button>
         }
       />
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Categorias e marcas</DialogTitle>
+          <DialogTitle>Categorias, marcas e linhas</DialogTitle>
         </DialogHeader>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <TaxonomyList
@@ -133,6 +137,12 @@ export function TaxonomyManager({
             items={marcas}
             onCreate={(nome) => createMarca({ nome })}
             onDelete={deleteMarca}
+          />
+          <TaxonomyList
+            label="Linhas"
+            items={linhas}
+            onCreate={(nome) => createLinha({ nome })}
+            onDelete={deleteLinha}
           />
         </div>
       </DialogContent>

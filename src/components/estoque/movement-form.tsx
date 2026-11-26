@@ -27,18 +27,18 @@ import {
   type MovimentacaoFormValues,
 } from "@/modules/estoque/schemas";
 
-type Produto = { id: string; nome: string; codigo_interno: string };
+type VarianteOption = { id: string; nome: string; codigo_interno: string; produto_nome: string };
 
 export function MovementForm({
-  produtos,
+  variantes,
   onSuccess,
 }: {
-  produtos: Produto[];
+  variantes: VarianteOption[];
   onSuccess: () => void;
 }) {
   const form = useForm<MovimentacaoFormValues>({
     resolver: zodResolver(movimentacaoSchema),
-    defaultValues: { produto_id: "", tipo: "entrada", quantidade: 1, motivo: "", origem: "manual" },
+    defaultValues: { variante_id: "", tipo: "entrada", quantidade: 1, motivo: "", origem: "manual" },
   });
   const tipo = form.watch("tipo");
 
@@ -46,7 +46,7 @@ export function MovementForm({
     try {
       await createMovimentacao(values);
       toast.success("Movimentação registrada.");
-      form.reset({ produto_id: "", tipo: "entrada", quantidade: 1, motivo: "", origem: "manual" });
+      form.reset({ variante_id: "", tipo: "entrada", quantidade: 1, motivo: "", origem: "manual" });
       onSuccess();
     } catch (error) {
       toast.error(
@@ -60,7 +60,7 @@ export function MovementForm({
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="produto_id"
+          name="variante_id"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Produto</FormLabel>
@@ -69,18 +69,18 @@ export function MovementForm({
                   <SelectTrigger className="w-full">
                     <SelectValue>
                       {() => {
-                        const produto = produtos.find((p) => p.id === field.value);
-                        return produto
-                          ? `${produto.nome} (${produto.codigo_interno})`
+                        const variante = variantes.find((v) => v.id === field.value);
+                        return variante
+                          ? `${variante.produto_nome} — ${variante.nome} (${variante.codigo_interno})`
                           : "Selecione um produto";
                       }}
                     </SelectValue>
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {produtos.map((produto) => (
-                    <SelectItem key={produto.id} value={produto.id}>
-                      {produto.nome} ({produto.codigo_interno})
+                  {variantes.map((variante) => (
+                    <SelectItem key={variante.id} value={variante.id}>
+                      {variante.produto_nome} — {variante.nome} ({variante.codigo_interno})
                     </SelectItem>
                   ))}
                 </SelectContent>

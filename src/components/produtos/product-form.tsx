@@ -24,31 +24,38 @@ import {
 } from "@/components/ui/select";
 import { BarcodeScannerButton } from "@/components/produtos/barcode-scanner-button";
 import { createProduto, updateProduto } from "@/server/actions/produtos/products";
-import { produtoSchema, type ProdutoFormValues } from "@/modules/produtos/schemas";
-import type { Categoria, Marca, Produto } from "@/modules/produtos/types";
+import { produtoRapidoSchema, type ProdutoRapidoFormValues } from "@/modules/produtos/schemas";
+import type { Categoria, Linha, Marca, ProdutoComVariantes } from "@/modules/produtos/types";
 
 const NONE = "none";
 
 type ProductFormProps = {
   categorias: Categoria[];
   marcas: Marca[];
-  produto?: Produto;
+  linhas: Linha[];
+  produto?: ProdutoComVariantes;
   onSuccess: () => void;
 };
 
-export function ProductForm({ categorias, marcas, produto, onSuccess }: ProductFormProps) {
-  const form = useForm<ProdutoFormValues>({
-    resolver: zodResolver(produtoSchema),
+export function ProductForm({ categorias, marcas, linhas, produto, onSuccess }: ProductFormProps) {
+  const variante = produto?.produto_variantes[0];
+  const codigoPrincipal = variante?.produto_codigos_barra.find((c) => c.principal);
+
+  const form = useForm<ProdutoRapidoFormValues>({
+    resolver: zodResolver(produtoRapidoSchema),
     defaultValues: {
       nome: produto?.nome ?? "",
-      codigo_interno: produto?.codigo_interno ?? "",
-      codigo_ean: produto?.codigo_ean ?? "",
+      descricao: produto?.descricao ?? "",
+      fabricante: produto?.fabricante ?? "",
       categoria_id: produto?.categoria_id ?? "",
       marca_id: produto?.marca_id ?? "",
-      custo: produto?.custo ?? 0,
-      preco_venda: produto?.preco_venda ?? 0,
-      estoque_minimo: produto?.estoque_minimo ?? 0,
-      validade: produto?.validade ?? "",
+      linha_id: produto?.linha_id ?? "",
+      codigo_interno: variante?.codigo_interno ?? "",
+      codigo_ean: codigoPrincipal?.codigo ?? "",
+      custo: variante?.custo ?? 0,
+      preco_venda: variante?.preco_venda ?? 0,
+      estoque_minimo: variante?.estoque_minimo ?? 0,
+      validade: variante?.validade ?? "",
     },
   });
 
@@ -57,7 +64,7 @@ export function ProductForm({ categorias, marcas, produto, onSuccess }: ProductF
   const margem =
     precoVenda > 0 ? (((precoVenda - custo) / precoVenda) * 100).toFixed(1) : null;
 
-  async function onSubmit(values: ProdutoFormValues) {
+  async function onSubmit(values: ProdutoRapidoFormValues) {
     try {
       if (produto) {
         await updateProduto(produto.id, values);
@@ -84,6 +91,20 @@ export function ProductForm({ categorias, marcas, produto, onSuccess }: ProductF
               <FormLabel>Nome do produto</FormLabel>
               <FormControl>
                 <Input placeholder="Perfume Essenza Noir 100ml" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="descricao"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Descrição (opcional)</FormLabel>
+              <FormControl>
+                <Input placeholder="Perfume feminino floral amadeirado" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -136,7 +157,7 @@ export function ProductForm({ categorias, marcas, produto, onSuccess }: ProductF
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <FormField
             control={form.control}
             name="categoria_id"
@@ -199,7 +220,51 @@ export function ProductForm({ categorias, marcas, produto, onSuccess }: ProductF
               </FormItem>
             )}
           />
+          <FormField
+            control={form.control}
+            name="linha_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Linha</FormLabel>
+                <Select
+                  value={field.value || NONE}
+                  onValueChange={(value) => field.onChange(value === NONE ? "" : value)}
+                >
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue>
+                        {() => linhas.find((l) => l.id === field.value)?.nome ?? "Nenhuma"}
+                      </SelectValue>
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value={NONE}>Nenhuma</SelectItem>
+                    {linhas.map((linha) => (
+                      <SelectItem key={linha.id} value={linha.id}>
+                        {linha.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
+
+        <FormField
+          control={form.control}
+          name="fabricante"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Fabricante (opcional)</FormLabel>
+              <FormControl>
+                <Input placeholder="Essenza Indústria e Comércio Ltda" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div className="grid grid-cols-3 gap-4">
           <FormField
@@ -262,6 +327,11 @@ export function ProductForm({ categorias, marcas, produto, onSuccess }: ProductF
             Margem estimada: <span className="font-medium text-foreground">{margem}%</span>
           </p>
         )}
+
+        <p className="text-xs text-muted-foreground">
+          Este cadastro rápido cria o produto com uma única variação (a padrão). Para adicionar
+          mais variações ao mesmo produto, isso chega numa próxima etapa.
+        </p>
 
         <Button type="submit" disabled={form.formState.isSubmitting} className="w-full">
           {form.formState.isSubmitting

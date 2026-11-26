@@ -15,7 +15,7 @@ export async function createMovimentacao(values: MovimentacaoFormValues) {
     const { data: estoque } = await supabase
       .from("estoque_atual")
       .select("quantidade_atual")
-      .eq("produto_id", parsed.produto_id)
+      .eq("variante_id", parsed.variante_id)
       .maybeSingle();
 
     const atual = estoque?.quantidade_atual ?? 0;
@@ -27,7 +27,7 @@ export async function createMovimentacao(values: MovimentacaoFormValues) {
   const { data, error } = await supabase
     .from("movimentacoes_estoque")
     .insert({
-      produto_id: parsed.produto_id,
+      variante_id: parsed.variante_id,
       tipo: parsed.tipo,
       quantidade: parsed.quantidade,
       motivo: parsed.motivo,
@@ -46,7 +46,7 @@ export async function createMovimentacao(values: MovimentacaoFormValues) {
     action: parsed.tipo,
     entity: "movimentacoes_estoque",
     entity_id: data.id,
-    metadata: { produto_id: parsed.produto_id, quantidade: parsed.quantidade },
+    metadata: { variante_id: parsed.variante_id, quantidade: parsed.quantidade },
   });
 
   revalidatePath("/estoque");

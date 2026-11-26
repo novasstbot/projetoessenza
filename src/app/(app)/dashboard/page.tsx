@@ -38,8 +38,8 @@ type VendaComItens = {
     quantidade: number;
     preco_unitario: number;
     custo_unitario: number;
-    produto_id: string;
-    produtos: { nome: string } | null;
+    variante_id: string;
+    produto_variantes: { nome: string } | null;
   }[];
 };
 
@@ -64,13 +64,17 @@ export default async function DashboardPage() {
     supabase
       .from("vendas")
       .select(
-        "id, total, created_at, itens_venda(quantidade, preco_unitario, custo_unitario, produto_id, produtos(nome))",
+        "id, total, created_at, itens_venda(quantidade, preco_unitario, custo_unitario, variante_id, produto_variantes(nome))",
       )
       .eq("status", "concluida")
       .gte("created_at", trintaCincoDiasAtras.toISOString())
       .order("created_at", { ascending: false }),
-    supabase.from("produtos").select("id, nome, estoque_minimo").eq("ativo", true),
-    supabase.from("estoque_atual").select("produto_id, quantidade_atual"),
+    supabase
+      .from("produto_variantes")
+      .select("id, nome, estoque_minimo, produtos!inner(ativo)")
+      .eq("ativo", true)
+      .eq("produtos.ativo", true),
+    supabase.from("estoque_atual").select("variante_id, quantidade_atual"),
     supabase
       .from("contas_pagar")
       .select("id, descricao, valor, vencimento")
@@ -106,12 +110,12 @@ export default async function DashboardPage() {
 
   const vendasPorProduto = new Map<string, { nome: string; total: number }>();
   for (const item of itensMes) {
-    const atual = vendasPorProduto.get(item.produto_id) ?? {
-      nome: item.produtos?.nome ?? "—",
+    const atual = vendasPorProduto.get(item.variante_id) ?? {
+      nome: item.produto_variantes?.nome ?? "—",
       total: 0,
     };
     atual.total += item.preco_unitario * item.quantidade;
-    vendasPorProduto.set(item.produto_id, atual);
+    vendasPorProduto.set(item.variante_id, atual);
   }
   const topProdutos = [...vendasPorProduto.values()]
     .sort((a, b) => b.total - a.total)
@@ -127,10 +131,12 @@ export default async function DashboardPage() {
   });
 
   const estoquePorProduto = new Map(
-    (estoqueAtual ?? []).map((item) => [item.produto_id, item.quantidade_atual]),
+    (estoqueAtual ?? []).map((item) => [item.variante_id, item.quantidade_atual]),
   );
   const produtosComEstoque = (produtosAtivos ?? []).map((p) => ({
-    ...p,
+    id: p.id,
+    nome: p.nome,
+    estoque_minimo: p.estoque_minimo,
     quantidade_atual: estoquePorProduto.get(p.id) ?? 0,
     tem_movimentacao: estoquePorProduto.has(p.id),
   }));

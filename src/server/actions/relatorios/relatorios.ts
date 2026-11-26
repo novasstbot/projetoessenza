@@ -17,7 +17,7 @@ export async function getVendasPeriodo() {
   const { data, error } = await supabase
     .from("vendas")
     .select(
-      "id, total, desconto, status, created_at, customers(full_name), itens_venda(quantidade, preco_unitario, subtotal, produtos(nome)), venda_pagamentos(valor, formas_pagamento(nome))",
+      "id, total, desconto, status, created_at, customers(full_name), itens_venda(quantidade, preco_unitario, subtotal, produto_variantes(nome)), venda_pagamentos(valor, formas_pagamento(nome))",
     )
     .gte("created_at", dozeMesesAtras())
     .order("created_at", { ascending: false });
@@ -68,26 +68,35 @@ export async function getEstoqueAtualDetalhado() {
   await requireRole(["admin", "gerente", "vendedor"]);
 
   const supabase = await createClient();
-  const [{ data: produtos, error: produtosError }, { data: estoqueAtual, error: estoqueError }] =
+  const [{ data: variantes, error: variantesError }, { data: estoqueAtual, error: estoqueError }] =
     await Promise.all([
       supabase
-        .from("produtos")
-        .select("id, nome, codigo_interno, estoque_minimo, validade, custo")
+        .from("produto_variantes")
+        .select(
+          "id, nome, codigo_interno, estoque_minimo, validade, custo, produtos!inner(nome, ativo)",
+        )
         .eq("ativo", true)
+        .eq("produtos.ativo", true)
         .order("nome"),
-      supabase.from("estoque_atual").select("produto_id, quantidade_atual"),
+      supabase.from("estoque_atual").select("variante_id, quantidade_atual"),
     ]);
-  if (produtosError) throw new Error(produtosError.message);
+  if (variantesError) throw new Error(variantesError.message);
   if (estoqueError) throw new Error(estoqueError.message);
 
-  const quantidadePorProduto = new Map(
-    (estoqueAtual ?? []).map((item) => [item.produto_id, item.quantidade_atual]),
+  const quantidadePorVariante = new Map(
+    (estoqueAtual ?? []).map((item) => [item.variante_id, item.quantidade_atual]),
   );
 
-  return (produtos ?? []).map((produto) => ({
-    ...produto,
-    quantidade_atual: quantidadePorProduto.get(produto.id) ?? 0,
-    tem_movimentacao: quantidadePorProduto.has(produto.id),
+  return (variantes ?? []).map((v) => ({
+    id: v.id,
+    nome: v.nome,
+    produto_nome: v.produtos[0]?.nome ?? "—",
+    codigo_interno: v.codigo_interno,
+    estoque_minimo: v.estoque_minimo,
+    validade: v.validade,
+    custo: v.custo,
+    quantidade_atual: quantidadePorVariante.get(v.id) ?? 0,
+    tem_movimentacao: quantidadePorVariante.has(v.id),
   }));
 }
 
@@ -97,7 +106,9 @@ export async function getMovimentacoesEstoquePeriodo() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("movimentacoes_estoque")
-    .select("id, produto_id, tipo, quantidade, motivo, origem, created_at, produtos(nome, codigo_interno)")
+    .select(
+      "id, variante_id, tipo, quantidade, motivo, origem, created_at, produto_variantes(nome, codigo_interno)",
+    )
     .gte("created_at", dozeMesesAtras())
     .order("created_at", { ascending: false });
 

@@ -5,7 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/server/auth/session";
 import { taxonomySchema, type TaxonomyFormValues } from "@/modules/produtos/schemas";
 
-async function createTaxonomy(table: "categorias" | "marcas", values: TaxonomyFormValues) {
+async function createTaxonomy(
+  table: "categorias" | "marcas" | "produto_linhas",
+  values: TaxonomyFormValues,
+) {
   const profile = await requireRole(["admin", "gerente"]);
   const parsed = taxonomySchema.parse(values);
 
@@ -25,7 +28,7 @@ async function createTaxonomy(table: "categorias" | "marcas", values: TaxonomyFo
   revalidatePath("/produtos");
 }
 
-async function deleteTaxonomy(table: "categorias" | "marcas", id: string) {
+async function deleteTaxonomy(table: "categorias" | "marcas" | "produto_linhas", id: string) {
   const profile = await requireRole(["admin", "gerente"]);
 
   const supabase = await createClient();
@@ -63,4 +66,12 @@ export async function createMarca(values: TaxonomyFormValues) {
 
 export async function deleteMarca(id: string) {
   return deleteTaxonomy("marcas", id);
+}
+
+export async function createLinha(values: TaxonomyFormValues) {
+  return createTaxonomy("produto_linhas", values);
+}
+
+export async function deleteLinha(id: string) {
+  return deleteTaxonomy("produto_linhas", id);
 }

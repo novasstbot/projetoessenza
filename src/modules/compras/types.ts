@@ -14,6 +14,7 @@ export type Compra = {
 export type ProdutoCompra = {
   id: string;
   nome: string;
+  produto_nome: string;
   codigo_interno: string;
   custo: number;
 };

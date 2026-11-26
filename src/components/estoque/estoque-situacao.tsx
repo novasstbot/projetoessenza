@@ -140,12 +140,25 @@ export function EstoqueSituacao({ produtos }: { produtos: ProdutoComEstoque[] })
                   filtrados.map((produto) => (
                     <tr key={produto.id}>
                       <td className="px-4 py-2.5 font-medium text-foreground">
-                        {produto.produto_nome !== produto.nome
-                          ? `${produto.produto_nome} — ${produto.nome}`
-                          : produto.nome}
-                        <span className="block text-xs text-muted-foreground">
-                          {produto.codigo_interno}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded border border-border bg-muted">
+                            {produto.imagem_thumb && (
+                              <img
+                                src={produto.imagem_thumb}
+                                alt=""
+                                className="size-full object-contain"
+                              />
+                            )}
+                          </div>
+                          <span>
+                            {produto.produto_nome !== produto.nome
+                              ? `${produto.produto_nome} — ${produto.nome}`
+                              : produto.nome}
+                            <span className="block text-xs text-muted-foreground">
+                              {produto.codigo_interno}
+                            </span>
+                          </span>
+                        </div>
                       </td>
                       <td className="px-4 py-2.5 text-foreground">{produto.quantidade_atual}</td>
                       <td className="px-4 py-2.5 text-muted-foreground">

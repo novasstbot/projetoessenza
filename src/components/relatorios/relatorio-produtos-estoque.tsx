@@ -49,8 +49,16 @@ export function RelatorioProdutosEstoque({
 }) {
   const [relatorio, setRelatorio] = useState<Relatorio>("situacao");
 
-  const valorTotalEstoque = useMemo(
+  const valorTotalEstoqueCusto = useMemo(
     () => produtos.reduce((sum, p) => sum + p.custo * p.quantidade_atual, 0),
+    [produtos],
+  );
+  const valorTotalEstoqueVenda = useMemo(
+    () => produtos.reduce((sum, p) => sum + p.preco_venda * p.quantidade_atual, 0),
+    [produtos],
+  );
+  const imagemPorNome = useMemo(
+    () => new Map(produtos.map((p) => [p.nome, p.imagem_thumb ?? null])),
     [produtos],
   );
 
@@ -121,15 +129,26 @@ export function RelatorioProdutosEstoque({
 
       {relatorio === "situacao" && (
         <div className="space-y-4">
-          <Card className="sm:max-w-xs">
-            <CardContent className="py-4">
-              <p className="text-xs text-muted-foreground">Valor total do estoque</p>
-              <p className="text-xl font-semibold text-foreground">
-                {formatCurrency(valorTotalEstoque)}
-              </p>
-              <p className="text-xs text-muted-foreground">Custo de aquisição × quantidade atual</p>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:max-w-xl">
+            <Card>
+              <CardContent className="py-4">
+                <p className="text-xs text-muted-foreground">Valor total do estoque (custo)</p>
+                <p className="text-xl font-semibold text-foreground">
+                  {formatCurrency(valorTotalEstoqueCusto)}
+                </p>
+                <p className="text-xs text-muted-foreground">Custo de aquisição × quantidade atual</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="py-4">
+                <p className="text-xs text-muted-foreground">Valor total do estoque (venda)</p>
+                <p className="text-xl font-semibold text-foreground">
+                  {formatCurrency(valorTotalEstoqueVenda)}
+                </p>
+                <p className="text-xs text-muted-foreground">Preço de venda × quantidade atual</p>
+              </CardContent>
+            </Card>
+          </div>
           <EstoqueSituacao produtos={produtos} />
         </div>
       )}
@@ -166,15 +185,27 @@ export function RelatorioProdutosEstoque({
                     </td>
                   </tr>
                 ) : (
-                  ranking.map((p) => (
-                    <tr key={p.nome}>
-                      <td className="px-4 py-2.5 font-medium text-foreground">{p.nome}</td>
-                      <td className="px-4 py-2.5 text-foreground">{p.quantidade}</td>
-                      <td className="px-4 py-2.5 text-foreground">
-                        {formatCurrency(p.faturamento)}
-                      </td>
-                    </tr>
-                  ))
+                  ranking.map((p) => {
+                    const imagem = imagemPorNome.get(p.nome);
+                    return (
+                      <tr key={p.nome}>
+                        <td className="px-4 py-2.5 font-medium text-foreground">
+                          <div className="flex items-center gap-2">
+                            <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded border border-border bg-muted">
+                              {imagem && (
+                                <img src={imagem} alt="" className="size-full object-contain" />
+                              )}
+                            </div>
+                            {p.nome}
+                          </div>
+                        </td>
+                        <td className="px-4 py-2.5 text-foreground">{p.quantidade}</td>
+                        <td className="px-4 py-2.5 text-foreground">
+                          {formatCurrency(p.faturamento)}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

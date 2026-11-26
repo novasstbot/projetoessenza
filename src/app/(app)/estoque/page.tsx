@@ -5,6 +5,7 @@ import { MovementDialog } from "@/components/estoque/movement-dialog";
 import { EstoqueSituacao } from "@/components/estoque/estoque-situacao";
 import { createClient } from "@/lib/supabase/server";
 import { unwrapRelacao } from "@/lib/supabase/relations";
+import { resolverThumb } from "@/lib/produtos/imagem";
 import { getProfile } from "@/server/auth/session";
 import type { Movimentacao, ProdutoComEstoque } from "@/modules/estoque/types";
 
@@ -20,7 +21,9 @@ export default async function EstoquePage() {
   const [{ data: variantes }, { data: estoqueAtual }, { data: movimentacoes }] = await Promise.all([
     supabase
       .from("produto_variantes")
-      .select("id, nome, codigo_interno, estoque_minimo, validade, produtos!inner(nome, ativo)")
+      .select(
+        "id, nome, codigo_interno, estoque_minimo, validade, variante_imagens(id, path_thumb, principal, ordem), produtos!inner(nome, ativo, produto_imagens(id, path_thumb, principal, ordem), categorias(imagem_thumb))",
+      )
       .eq("ativo", true)
       .eq("produtos.ativo", true)
       .order("nome"),
@@ -38,16 +41,24 @@ export default async function EstoquePage() {
     (estoqueAtual ?? []).map((item) => [item.variante_id, item.quantidade_atual]),
   );
 
-  const produtosComEstoque: ProdutoComEstoque[] = (variantes ?? []).map((v) => ({
-    id: v.id,
-    nome: v.nome,
-    produto_nome: unwrapRelacao(v.produtos)?.nome ?? "—",
-    codigo_interno: v.codigo_interno,
-    estoque_minimo: v.estoque_minimo,
-    validade: v.validade,
-    quantidade_atual: estoquePorVariante.get(v.id) ?? 0,
-    tem_movimentacao: estoquePorVariante.has(v.id),
-  }));
+  const produtosComEstoque: ProdutoComEstoque[] = (variantes ?? []).map((v) => {
+    const produtoDaVariante = unwrapRelacao(v.produtos);
+    return {
+      id: v.id,
+      nome: v.nome,
+      produto_nome: produtoDaVariante?.nome ?? "—",
+      codigo_interno: v.codigo_interno,
+      estoque_minimo: v.estoque_minimo,
+      validade: v.validade,
+      quantidade_atual: estoquePorVariante.get(v.id) ?? 0,
+      tem_movimentacao: estoquePorVariante.has(v.id),
+      imagem_thumb: resolverThumb(
+        { variante_imagens: v.variante_imagens },
+        { produto_imagens: produtoDaVariante?.produto_imagens ?? [] },
+        unwrapRelacao(produtoDaVariante?.categorias),
+      ),
+    };
+  });
 
   const variantesList = (variantes ?? []).map((v) => ({
     id: v.id,

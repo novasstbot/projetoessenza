@@ -21,6 +21,7 @@ export type ProdutoComEstoque = {
   validade: string | null;
   quantidade_atual: number;
   tem_movimentacao: boolean;
+  imagem_thumb?: string | null;
 };
 
 // Quantos dias antes do vencimento um produto já conta como "próximo da
@@ -39,7 +40,7 @@ export type Movimentacao = {
   profiles: { full_name: string | null } | null;
 };
 
-export type ProdutoEstoqueDetalhado = ProdutoComEstoque & { custo: number };
+export type ProdutoEstoqueDetalhado = ProdutoComEstoque & { custo: number; preco_venda: number };
 
 export type MovimentacaoEstoquePeriodo = {
   id: string;

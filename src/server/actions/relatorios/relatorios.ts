@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { unwrapRelacao } from "@/lib/supabase/relations";
+import { resolverThumb } from "@/lib/produtos/imagem";
 import { requireRole } from "@/server/auth/session";
 import { buildTotaisPorCaixa } from "@/lib/caixa/totais";
 
@@ -74,7 +75,7 @@ export async function getEstoqueAtualDetalhado() {
       supabase
         .from("produto_variantes")
         .select(
-          "id, nome, codigo_interno, estoque_minimo, validade, custo, produtos!inner(nome, ativo)",
+          "id, nome, codigo_interno, estoque_minimo, validade, custo, preco_venda, variante_imagens(id, path_thumb, principal, ordem), produtos!inner(nome, ativo, produto_imagens(id, path_thumb, principal, ordem), categorias(imagem_thumb))",
         )
         .eq("ativo", true)
         .eq("produtos.ativo", true)
@@ -88,17 +89,26 @@ export async function getEstoqueAtualDetalhado() {
     (estoqueAtual ?? []).map((item) => [item.variante_id, item.quantidade_atual]),
   );
 
-  return (variantes ?? []).map((v) => ({
-    id: v.id,
-    nome: v.nome,
-    produto_nome: unwrapRelacao(v.produtos)?.nome ?? "—",
-    codigo_interno: v.codigo_interno,
-    estoque_minimo: v.estoque_minimo,
-    validade: v.validade,
-    custo: v.custo,
-    quantidade_atual: quantidadePorVariante.get(v.id) ?? 0,
-    tem_movimentacao: quantidadePorVariante.has(v.id),
-  }));
+  return (variantes ?? []).map((v) => {
+    const produtoDaVariante = unwrapRelacao(v.produtos);
+    return {
+      id: v.id,
+      nome: v.nome,
+      produto_nome: produtoDaVariante?.nome ?? "—",
+      codigo_interno: v.codigo_interno,
+      estoque_minimo: v.estoque_minimo,
+      validade: v.validade,
+      custo: v.custo,
+      preco_venda: v.preco_venda,
+      quantidade_atual: quantidadePorVariante.get(v.id) ?? 0,
+      tem_movimentacao: quantidadePorVariante.has(v.id),
+      imagem_thumb: resolverThumb(
+        { variante_imagens: v.variante_imagens },
+        { produto_imagens: produtoDaVariante?.produto_imagens ?? [] },
+        unwrapRelacao(produtoDaVariante?.categorias),
+      ),
+    };
+  });
 }
 
 export async function getMovimentacoesEstoquePeriodo() {

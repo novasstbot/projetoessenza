@@ -41,14 +41,35 @@ function normalizeVariante(values: ProdutoRapidoFormValues, produto_id: string) 
 }
 
 // Cadastro rápido: cria o produto principal e sua variação padrão em
-// sequência. Não é uma RPC porque não mexe em estoque/dinheiro — se a
-// segunda escrita falhar, desfaz a primeira pra não deixar produto órfão
-// sem variação.
+// sequência. Valida os códigos antes de criar qualquer linha — assim um
+// código duplicado nunca chega a criar um produto órfão que precise ser
+// desfeito.
 export async function createProduto(values: ProdutoRapidoFormValues) {
   const profile = await requireRole(["admin", "gerente"]);
   const parsed = produtoRapidoSchema.parse(values);
 
   const supabase = await createClient();
+
+  const { data: codigoInternoExistente } = await supabase
+    .from("produto_variantes")
+    .select("id")
+    .eq("codigo_interno", parsed.codigo_interno)
+    .maybeSingle();
+  if (codigoInternoExistente) {
+    throw new Error("Já existe uma variação com esse código interno.");
+  }
+
+  if (parsed.codigo_ean) {
+    const { data: codigoEanExistente } = await supabase
+      .from("produto_codigos_barra")
+      .select("id")
+      .eq("codigo", parsed.codigo_ean)
+      .maybeSingle();
+    if (codigoEanExistente) {
+      throw new Error("Esse código de barras já está em uso.");
+    }
+  }
+
   const { data: produto, error: produtoError } = await supabase
     .from("produtos")
     .insert(normalizeProduto(parsed))

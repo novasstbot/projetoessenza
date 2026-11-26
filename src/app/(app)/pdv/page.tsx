@@ -49,6 +49,11 @@ export default async function PdvPage() {
   const produtosPdv: ProdutoPdv[] = (variantes ?? []).map((v) => {
     const codigos = v.produto_codigos_barra;
     const codigoPrincipal = codigos.find((c) => c.principal) ?? codigos[0];
+    // `categorias` aqui pode vir como objeto único ou como array de 1 item,
+    // dependendo de como o supabase-js infere o embed aninhado dentro de um
+    // `!inner` sem types gerados do banco — tratamos os dois casos.
+    const categoriaDoProduto = v.produtos[0]?.categorias;
+    const categoria = Array.isArray(categoriaDoProduto) ? categoriaDoProduto[0] : categoriaDoProduto;
     return {
       id: v.id,
       nome: v.nome,
@@ -59,7 +64,7 @@ export default async function PdvPage() {
       imagem_thumb: resolverThumb(
         { variante_imagens: v.variante_imagens },
         { produto_imagens: v.produtos[0]?.produto_imagens ?? [] },
-        v.produtos[0]?.categorias[0] ?? null,
+        categoria ?? null,
       ),
     };
   });

@@ -70,7 +70,14 @@ export function ProductForm({ categorias, marcas, linhas }: ProductFormProps) {
       toast.success("Produto criado.");
       router.push(`/produtos/${id}`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível salvar.");
+      const message = error instanceof Error ? error.message : "Não foi possível salvar.";
+      if (message.includes("código interno")) {
+        form.setError("codigo_interno", { message });
+      } else if (message.includes("código de barras")) {
+        form.setError("codigo_ean", { message });
+      } else {
+        toast.error(message);
+      }
     }
   }
 

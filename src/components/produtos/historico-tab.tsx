@@ -1,13 +1,9 @@
 "use client";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useState } from "react";
+import { Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { movimentacaoOrigemLabels, type MovimentacaoOrigem } from "@/modules/estoque/types";
 import type { MovimentoVariante, VarianteDetalhada } from "@/modules/produtos/types";
 
@@ -18,36 +14,36 @@ function formatDateTime(value: string) {
 export function HistoricoTab({
   variantes,
   movimentos,
-  varianteSelecionada,
-  onSelect,
 }: {
   variantes: VarianteDetalhada[];
   movimentos: MovimentoVariante[];
-  varianteSelecionada: VarianteDetalhada | null;
-  onSelect: (id: string) => void;
 }) {
+  const [filtro, setFiltro] = useState("");
+
   if (variantes.length === 0) {
     return <p className="text-sm text-muted-foreground">Nenhuma variação cadastrada.</p>;
   }
 
-  const filtrados = varianteSelecionada
-    ? movimentos.filter((m) => m.variante_id === varianteSelecionada.id)
-    : movimentos;
+  const termo = filtro.trim().toLowerCase();
+  const idsFiltrados = new Set(
+    (termo ? variantes.filter((v) => v.nome.toLowerCase().includes(termo)) : variantes).map(
+      (v) => v.id,
+    ),
+  );
+  const nomePorVariante = new Map(variantes.map((v) => [v.id, v.nome]));
+  const filtrados = movimentos.filter((m) => idsFiltrados.has(m.variante_id));
 
   return (
     <div className="space-y-4">
-      <Select value={varianteSelecionada?.id} onValueChange={(v) => v && onSelect(v)}>
-        <SelectTrigger className="w-72">
-          <SelectValue>{() => varianteSelecionada?.nome ?? "Selecione a variação"}</SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {variantes.map((v) => (
-            <SelectItem key={v.id} value={v.id}>
-              {v.nome} ({v.codigo_interno})
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="relative max-w-sm">
+        <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={filtro}
+          onChange={(e) => setFiltro(e.target.value)}
+          placeholder="Filtrar por nome da variação"
+          className="pl-8"
+        />
+      </div>
 
       <div className="divide-y divide-border rounded-lg border border-border">
         {filtrados.length === 0 ? (
@@ -64,7 +60,10 @@ export function HistoricoTab({
                   </Badge>
                   <span className="text-xs text-muted-foreground">{formatDateTime(m.created_at)}</span>
                 </div>
-                <p className="mt-0.5 text-foreground">{m.motivo}</p>
+                <p className="mt-0.5 text-foreground">
+                  <span className="font-medium">{nomePorVariante.get(m.variante_id) ?? "—"}</span> —{" "}
+                  {m.motivo}
+                </p>
                 <p className="text-xs text-muted-foreground">{m.profiles?.full_name ?? "usuário"}</p>
               </div>
               <span className="whitespace-nowrap font-medium text-foreground">

@@ -3,17 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Star, Trash2 } from "lucide-react";
+import { Search, Star, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { BarcodeScannerButton } from "@/components/produtos/barcode-scanner-button";
 import {
   addCodigoBarra,
@@ -22,30 +15,25 @@ import {
 } from "@/server/actions/produtos/barcodes";
 import type { VarianteDetalhada } from "@/modules/produtos/types";
 
-export function CodigosBarraTab({
+function VarianteCodigos({
   produtoId,
-  variantes,
-  varianteSelecionada,
-  onSelect,
+  variante,
 }: {
   produtoId: string;
-  variantes: VarianteDetalhada[];
-  varianteSelecionada: VarianteDetalhada | null;
-  onSelect: (id: string) => void;
+  variante: VarianteDetalhada;
 }) {
   const router = useRouter();
   const [codigo, setCodigo] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   async function handleAdd() {
-    if (!varianteSelecionada) return;
     if (!/^\d{8,14}$/.test(codigo)) {
       toast.error("Código deve ter entre 8 e 14 dígitos.");
       return;
     }
     setSubmitting(true);
     try {
-      await addCodigoBarra(varianteSelecionada.id, produtoId, { codigo });
+      await addCodigoBarra(variante.id, produtoId, { codigo });
       setCodigo("");
       router.refresh();
     } catch (error) {
@@ -65,96 +53,118 @@ export function CodigosBarraTab({
   }
 
   async function handleSetPrincipal(id: string) {
-    if (!varianteSelecionada) return;
     try {
-      await setCodigoPrincipal(id, varianteSelecionada.id, produtoId);
+      await setCodigoPrincipal(id, variante.id, produtoId);
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível atualizar.");
     }
   }
 
+  return (
+    <div className="rounded-lg border border-border p-3">
+      <p className="mb-2 text-sm font-medium text-foreground">
+        {variante.nome}{" "}
+        <span className="font-normal text-muted-foreground">({variante.codigo_interno})</span>
+      </p>
+
+      <div className="mb-2 flex gap-2">
+        <Input
+          value={codigo}
+          onChange={(e) => setCodigo(e.target.value)}
+          placeholder="7891234567890"
+          className="max-w-xs"
+        />
+        <BarcodeScannerButton onDetected={setCodigo} />
+        <Button type="button" size="sm" disabled={submitting} onClick={handleAdd}>
+          Adicionar
+        </Button>
+      </div>
+
+      <div className="space-y-1.5">
+        {variante.produto_codigos_barra.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhum código cadastrado.</p>
+        ) : (
+          variante.produto_codigos_barra.map((c) => (
+            <div
+              key={c.id}
+              className="flex items-center justify-between rounded-lg border border-border px-3 py-2"
+            >
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-sm text-foreground">{c.codigo}</span>
+                <Badge variant="outline">{c.tipo}</Badge>
+                {c.principal && <Badge variant="secondary">Principal</Badge>}
+              </div>
+              <div className="flex gap-1">
+                {!c.principal && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Definir como principal"
+                    onClick={() => handleSetPrincipal(c.id)}
+                  >
+                    <Star className="size-4" />
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Remover"
+                  onClick={() => handleRemove(c.id)}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function CodigosBarraTab({
+  produtoId,
+  variantes,
+}: {
+  produtoId: string;
+  variantes: VarianteDetalhada[];
+}) {
+  const [filtro, setFiltro] = useState("");
+
   if (variantes.length === 0) {
     return <p className="text-sm text-muted-foreground">Cadastre uma variação primeiro.</p>;
   }
 
+  const termo = filtro.trim().toLowerCase();
+  const filtradas = termo
+    ? variantes.filter(
+        (v) =>
+          v.nome.toLowerCase().includes(termo) || v.codigo_interno.toLowerCase().includes(termo),
+      )
+    : variantes;
+
   return (
     <div className="space-y-4">
-      <Select
-        value={varianteSelecionada?.id}
-        onValueChange={(v) => v && onSelect(v)}
-      >
-        <SelectTrigger className="w-72">
-          <SelectValue>
-            {() => varianteSelecionada?.nome ?? "Selecione a variação"}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {variantes.map((v) => (
-            <SelectItem key={v.id} value={v.id}>
-              {v.nome} ({v.codigo_interno})
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="relative max-w-sm">
+        <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={filtro}
+          onChange={(e) => setFiltro(e.target.value)}
+          placeholder="Filtrar por nome ou código interno"
+          className="pl-8"
+        />
+      </div>
 
-      {varianteSelecionada && (
-        <>
-          <div className="flex gap-2">
-            <Input
-              value={codigo}
-              onChange={(e) => setCodigo(e.target.value)}
-              placeholder="7891234567890"
-              className="max-w-xs"
-            />
-            <BarcodeScannerButton onDetected={setCodigo} />
-            <Button type="button" size="sm" disabled={submitting} onClick={handleAdd}>
-              Adicionar
-            </Button>
-          </div>
-
-          <div className="space-y-1.5">
-            {varianteSelecionada.produto_codigos_barra.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum código cadastrado.</p>
-            ) : (
-              varianteSelecionada.produto_codigos_barra.map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-center justify-between rounded-lg border border-border px-3 py-2"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm text-foreground">{c.codigo}</span>
-                    <Badge variant="outline">{c.tipo}</Badge>
-                    {c.principal && <Badge variant="secondary">Principal</Badge>}
-                  </div>
-                  <div className="flex gap-1">
-                    {!c.principal && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label="Definir como principal"
-                        onClick={() => handleSetPrincipal(c.id)}
-                      >
-                        <Star className="size-4" />
-                      </Button>
-                    )}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="Remover"
-                      onClick={() => handleRemove(c.id)}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </>
-      )}
+      <div className="space-y-3">
+        {filtradas.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhuma variação encontrada.</p>
+        ) : (
+          filtradas.map((v) => <VarianteCodigos key={v.id} produtoId={produtoId} variante={v} />)
+        )}
+      </div>
     </div>
   );
 }

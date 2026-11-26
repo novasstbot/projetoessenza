@@ -272,8 +272,6 @@ export function ProdutoEditor({
     variantes[0]?.id ?? null,
   );
 
-  const varianteSelecionada = variantes.find((v) => v.id === varianteSelecionadaId) ?? null;
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-1.5">
@@ -324,23 +322,9 @@ export function ProdutoEditor({
         />
       )}
 
-      {aba === "codigos" && (
-        <CodigosBarraTab
-          produtoId={produto.id}
-          variantes={variantes}
-          varianteSelecionada={varianteSelecionada}
-          onSelect={setVarianteSelecionadaId}
-        />
-      )}
+      {aba === "codigos" && <CodigosBarraTab produtoId={produto.id} variantes={variantes} />}
 
-      {aba === "historico" && (
-        <HistoricoTab
-          variantes={variantes}
-          movimentos={movimentos}
-          varianteSelecionada={varianteSelecionada}
-          onSelect={setVarianteSelecionadaId}
-        />
-      )}
+      {aba === "historico" && <HistoricoTab variantes={variantes} movimentos={movimentos} />}
     </div>
   );
 }

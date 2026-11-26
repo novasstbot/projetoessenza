@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -23,9 +24,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BarcodeScannerButton } from "@/components/produtos/barcode-scanner-button";
-import { createProduto, updateProduto } from "@/server/actions/produtos/products";
+import { createProduto } from "@/server/actions/produtos/products";
 import { produtoRapidoSchema, type ProdutoRapidoFormValues } from "@/modules/produtos/schemas";
-import type { Categoria, Linha, Marca, ProdutoComVariantes } from "@/modules/produtos/types";
+import type { Categoria, Linha, Marca } from "@/modules/produtos/types";
 
 const NONE = "none";
 
@@ -33,29 +34,28 @@ type ProductFormProps = {
   categorias: Categoria[];
   marcas: Marca[];
   linhas: Linha[];
-  produto?: ProdutoComVariantes;
-  onSuccess: () => void;
 };
 
-export function ProductForm({ categorias, marcas, linhas, produto, onSuccess }: ProductFormProps) {
-  const variante = produto?.produto_variantes[0];
-  const codigoPrincipal = variante?.produto_codigos_barra.find((c) => c.principal);
-
+// Cadastro rápido: cria o produto principal e sua variação padrão em um
+// único passo. Para gerenciar variações adicionais, códigos de barras extras
+// e histórico de um produto já existente, use a página /produtos/[id].
+export function ProductForm({ categorias, marcas, linhas }: ProductFormProps) {
+  const router = useRouter();
   const form = useForm<ProdutoRapidoFormValues>({
     resolver: zodResolver(produtoRapidoSchema),
     defaultValues: {
-      nome: produto?.nome ?? "",
-      descricao: produto?.descricao ?? "",
-      fabricante: produto?.fabricante ?? "",
-      categoria_id: produto?.categoria_id ?? "",
-      marca_id: produto?.marca_id ?? "",
-      linha_id: produto?.linha_id ?? "",
-      codigo_interno: variante?.codigo_interno ?? "",
-      codigo_ean: codigoPrincipal?.codigo ?? "",
-      custo: variante?.custo ?? 0,
-      preco_venda: variante?.preco_venda ?? 0,
-      estoque_minimo: variante?.estoque_minimo ?? 0,
-      validade: variante?.validade ?? "",
+      nome: "",
+      descricao: "",
+      fabricante: "",
+      categoria_id: "",
+      marca_id: "",
+      linha_id: "",
+      codigo_interno: "",
+      codigo_ean: "",
+      custo: 0,
+      preco_venda: 0,
+      estoque_minimo: 0,
+      validade: "",
     },
   });
 
@@ -66,15 +66,9 @@ export function ProductForm({ categorias, marcas, linhas, produto, onSuccess }: 
 
   async function onSubmit(values: ProdutoRapidoFormValues) {
     try {
-      if (produto) {
-        await updateProduto(produto.id, values);
-        toast.success("Produto atualizado.");
-      } else {
-        await createProduto(values);
-        toast.success("Produto criado.");
-        form.reset();
-      }
-      onSuccess();
+      const id = await createProduto(values);
+      toast.success("Produto criado.");
+      router.push(`/produtos/${id}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível salvar.");
     }
@@ -329,16 +323,12 @@ export function ProductForm({ categorias, marcas, linhas, produto, onSuccess }: 
         )}
 
         <p className="text-xs text-muted-foreground">
-          Este cadastro rápido cria o produto com uma única variação (a padrão). Para adicionar
-          mais variações ao mesmo produto, isso chega numa próxima etapa.
+          Isso cria o produto com uma única variação (a padrão). Depois de criado, você pode
+          adicionar mais variações, códigos de barra e ver o histórico na página do produto.
         </p>
 
         <Button type="submit" disabled={form.formState.isSubmitting} className="w-full">
-          {form.formState.isSubmitting
-            ? "Salvando..."
-            : produto
-              ? "Salvar alterações"
-              : "Criar produto"}
+          {form.formState.isSubmitting ? "Salvando..." : "Criar produto"}
         </Button>
       </form>
     </Form>

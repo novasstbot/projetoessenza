@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Plus, Search, Pencil, EyeOff, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -14,9 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ProductDialog } from "@/components/produtos/product-dialog";
 import { toggleProdutoAtivo } from "@/server/actions/produtos/products";
-import type { Categoria, Linha, Marca, ProdutoComVariantes } from "@/modules/produtos/types";
+import type { Categoria, Marca, ProdutoComVariantes } from "@/modules/produtos/types";
 
 const ALL = "all";
 
@@ -28,13 +28,11 @@ export function ProductsTable({
   produtos,
   categorias,
   marcas,
-  linhas,
   canManage,
 }: {
   produtos: ProdutoComVariantes[];
   categorias: Categoria[];
   marcas: Marca[];
-  linhas: Linha[];
   canManage: boolean;
 }) {
   const router = useRouter();
@@ -124,15 +122,13 @@ export function ProductsTable({
         </Select>
 
         {canManage && (
-          <ProductDialog
-            categorias={categorias}
-            marcas={marcas}
-            linhas={linhas}
-            trigger={
-              <Button className="gap-1.5">
+          <Button
+            className="gap-1.5"
+            render={
+              <Link href="/produtos/novo">
                 <Plus className="size-4" />
                 Novo produto
-              </Button>
+              </Link>
             }
           />
         )}
@@ -196,15 +192,14 @@ export function ProductsTable({
                     {canManage && (
                       <td className="px-4 py-2.5">
                         <div className="flex justify-end gap-1">
-                          <ProductDialog
-                            categorias={categorias}
-                            marcas={marcas}
-                            linhas={linhas}
-                            produto={produto}
-                            trigger={
-                              <Button variant="ghost" size="icon-sm" aria-label="Editar">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label="Editar"
+                            render={
+                              <Link href={`/produtos/${produto.id}`}>
                                 <Pencil className="size-4" />
-                              </Button>
+                              </Link>
                             }
                           />
                           <Button

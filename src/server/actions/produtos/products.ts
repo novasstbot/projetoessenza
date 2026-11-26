@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/server/auth/session";
-import { produtoRapidoSchema, type ProdutoRapidoFormValues } from "@/modules/produtos/schemas";
+import {
+  produtoRapidoSchema,
+  produtoSchema,
+  type ProdutoRapidoFormValues,
+  type ProdutoFormValues,
+} from "@/modules/produtos/schemas";
 
 function tipoDoCodigo(codigo: string) {
   if (codigo.length === 13) return "ean_13";
@@ -92,86 +97,31 @@ export async function createProduto(values: ProdutoRapidoFormValues) {
   });
 
   revalidatePath("/produtos");
+
+  return produto.id as string;
 }
 
-// Fase A: formulário combinado ainda assume 1 variação por produto (a
-// padrão). Cadastro de variações adicionais é da Fase B (UI em abas).
-export async function updateProduto(id: string, values: ProdutoRapidoFormValues) {
+// Fase B: edita só os dados gerais do produto principal — variações têm
+// suas próprias ações (src/server/actions/produtos/variantes.ts).
+export async function updateProdutoPrincipal(id: string, values: ProdutoFormValues) {
   const profile = await requireRole(["admin", "gerente"]);
-  const parsed = produtoRapidoSchema.parse(values);
+  const parsed = produtoSchema.parse(values);
 
   const supabase = await createClient();
-  const { error: produtoError } = await supabase
+  const { error } = await supabase
     .from("produtos")
-    .update(normalizeProduto(parsed))
+    .update({
+      nome: parsed.nome,
+      descricao: parsed.descricao || null,
+      fabricante: parsed.fabricante || null,
+      categoria_id: parsed.categoria_id || null,
+      marca_id: parsed.marca_id || null,
+      linha_id: parsed.linha_id || null,
+    })
     .eq("id", id);
 
-  if (produtoError) {
-    throw new Error(produtoError.message);
-  }
-
-  const { data: variante, error: varianteSelectError } = await supabase
-    .from("produto_variantes")
-    .select("id")
-    .eq("produto_id", id)
-    .order("created_at")
-    .limit(1)
-    .maybeSingle();
-
-  if (varianteSelectError) {
-    throw new Error(varianteSelectError.message);
-  }
-
-  if (variante) {
-    const { error: varianteError } = await supabase
-      .from("produto_variantes")
-      .update({
-        nome: parsed.nome,
-        codigo_interno: parsed.codigo_interno,
-        custo: parsed.custo,
-        preco_venda: parsed.preco_venda,
-        estoque_minimo: parsed.estoque_minimo,
-        validade: parsed.validade || null,
-      })
-      .eq("id", variante.id);
-
-    if (varianteError) {
-      throw new Error(
-        varianteError.code === "23505"
-          ? "Já existe uma variação com esse código interno."
-          : varianteError.message,
-      );
-    }
-
-    const { data: codigoExistente } = await supabase
-      .from("produto_codigos_barra")
-      .select("id")
-      .eq("variante_id", variante.id)
-      .eq("principal", true)
-      .maybeSingle();
-
-    if (parsed.codigo_ean) {
-      const { error: codigoError } = codigoExistente
-        ? await supabase
-            .from("produto_codigos_barra")
-            .update({ codigo: parsed.codigo_ean, tipo: tipoDoCodigo(parsed.codigo_ean) })
-            .eq("id", codigoExistente.id)
-        : await supabase.from("produto_codigos_barra").insert({
-            variante_id: variante.id,
-            codigo: parsed.codigo_ean,
-            tipo: tipoDoCodigo(parsed.codigo_ean),
-            principal: true,
-          });
-      if (codigoError) {
-        throw new Error(
-          codigoError.code === "23505"
-            ? "Esse código de barras já está em uso."
-            : codigoError.message,
-        );
-      }
-    } else if (codigoExistente) {
-      await supabase.from("produto_codigos_barra").delete().eq("id", codigoExistente.id);
-    }
+  if (error) {
+    throw new Error(error.message);
   }
 
   await supabase.from("audit_logs").insert({
@@ -182,6 +132,7 @@ export async function updateProduto(id: string, values: ProdutoRapidoFormValues)
   });
 
   revalidatePath("/produtos");
+  revalidatePath(`/produtos/${id}`);
 }
 
 export async function toggleProdutoAtivo(id: string, ativo: boolean) {

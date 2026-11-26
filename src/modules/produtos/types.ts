@@ -36,6 +36,7 @@ export type CodigoBarra = {
 };
 
 export type VarianteAtributo = {
+  id: string;
   atributo: string;
   valor: string;
 };
@@ -60,4 +61,17 @@ export type VarianteComCodigos = Variante & {
 
 export type ProdutoComVariantes = Produto & {
   produto_variantes: VarianteComCodigos[];
+};
+
+export type VarianteDetalhada = VarianteComCodigos & { quantidade_atual: number };
+
+export type MovimentoVariante = {
+  id: string;
+  variante_id: string;
+  tipo: "entrada" | "saida";
+  quantidade: number;
+  motivo: string;
+  origem: string;
+  created_at: string;
+  profiles: { full_name: string | null } | null;
 };

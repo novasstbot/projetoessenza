@@ -8,6 +8,7 @@ export type FormaPagamentoConfig = {
   id: string;
   nome: string;
   ativo: boolean;
+  eh_cartao: boolean;
   conta_financeira_id: string | null;
 };
 

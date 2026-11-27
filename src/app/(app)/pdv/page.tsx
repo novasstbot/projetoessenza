@@ -88,7 +88,15 @@ export default async function PdvPage() {
         .eq("produtos.ativo", true)
         .order("nome"),
       supabase.from("estoque_atual").select("variante_id, quantidade_atual"),
-      supabase.from("formas_pagamento").select("id, nome, eh_cartao").eq("ativo", true).order("nome"),
+      // Formas de pagamento sem conta de destino configurada ainda não
+      // podem ser usadas pra vender (finalizar_venda rejeitaria) — nem
+      // aparecem aqui até alguém configurar o destino em Configurações.
+      supabase
+        .from("formas_pagamento")
+        .select("id, nome, eh_cartao")
+        .eq("ativo", true)
+        .or("eh_cartao.eq.true,conta_financeira_id.not.is.null")
+        .order("nome"),
       supabase
         .from("customers")
         .select("id, full_name, cpf_cnpj")

@@ -20,7 +20,7 @@ export default async function ConfiguracoesPage() {
       .order("nome"),
     supabase
       .from("formas_pagamento")
-      .select("id, nome, ativo, conta_financeira_id")
+      .select("id, nome, ativo, eh_cartao, conta_financeira_id")
       .order("nome"),
     supabase
       .from("operadoras_cartao")

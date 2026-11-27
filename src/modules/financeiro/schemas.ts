@@ -93,6 +93,12 @@ export const aporteRetiradaSchema = z.object({
 });
 export type AporteRetiradaFormValues = z.infer<typeof aporteRetiradaSchema>;
 
+export const formaPagamentoSchema = z.object({
+  nome: z.string().min(2, "Informe o nome da forma de pagamento"),
+  ehCartao: z.boolean(),
+});
+export type FormaPagamentoFormValues = z.infer<typeof formaPagamentoSchema>;
+
 export const operadoraCartaoSchema = z.object({
   nome: z.string().min(2, "Informe o nome da operadora"),
 });

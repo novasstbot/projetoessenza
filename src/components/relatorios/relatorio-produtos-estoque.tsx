@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDownUp, PackageSearch, Wallet } from "lucide-react";
+import { PackageSearch, Wallet } from "lucide-react";
 import { DateRangeFilter, type DateRange } from "@/components/ui/date-range-filter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,7 +19,6 @@ import type {
   MovimentacaoOrigem,
   ProdutoEstoqueDetalhado,
 } from "@/modules/estoque/types";
-import type { VendaCaixa } from "@/modules/pdv/types";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -35,17 +34,15 @@ function dentroDoRange(dataIso: string, range: DateRange) {
   return data >= range.from && data <= range.to;
 }
 
-type Relatorio = "situacao" | "vendidos" | "movimentacoes";
+type Relatorio = "situacao" | "movimentacoes";
 const TODAS_ORIGENS = "todas";
 
 export function RelatorioProdutosEstoque({
   produtos,
   movimentos,
-  vendas,
 }: {
   produtos: ProdutoEstoqueDetalhado[];
   movimentos: MovimentacaoEstoquePeriodo[];
-  vendas: VendaCaixa[];
 }) {
   const [relatorio, setRelatorio] = useState<Relatorio>("situacao");
 
@@ -57,31 +54,6 @@ export function RelatorioProdutosEstoque({
     () => produtos.reduce((sum, p) => sum + p.preco_venda * p.quantidade_atual, 0),
     [produtos],
   );
-  const imagemPorNome = useMemo(
-    () => new Map(produtos.map((p) => [p.nome, p.imagem_thumb ?? null])),
-    [produtos],
-  );
-
-  // --- Mais e menos vendidos ---
-  const [rangeVendidos, setRangeVendidos] = useState<DateRange>(null);
-  const [ordem, setOrdem] = useState<"desc" | "asc">("desc");
-  const ranking = useMemo(() => {
-    const porProduto = new Map<string, { nome: string; quantidade: number; faturamento: number }>();
-    for (const venda of vendas) {
-      if (venda.status !== "concluida") continue;
-      if (!dentroDoRange(venda.created_at, rangeVendidos)) continue;
-      for (const item of venda.itens_venda) {
-        const nome = item.produto_variantes?.nome ?? "Produto removido";
-        const atual = porProduto.get(nome) ?? { nome, quantidade: 0, faturamento: 0 };
-        atual.quantidade += item.quantidade;
-        atual.faturamento += item.subtotal;
-        porProduto.set(nome, atual);
-      }
-    }
-    const lista = Array.from(porProduto.values());
-    lista.sort((a, b) => (ordem === "desc" ? b.quantidade - a.quantidade : a.quantidade - b.quantidade));
-    return lista;
-  }, [vendas, rangeVendidos, ordem]);
 
   // --- Movimentações ---
   const [rangeMov, setRangeMov] = useState<DateRange>(null);
@@ -103,7 +75,7 @@ export function RelatorioProdutosEstoque({
       <div className="flex gap-1.5">
         <Button
           type="button"
-          variant={relatorio === "situacao" ? "secondary" : "ghost"}
+          variant={relatorio === "situacao" ? "secondary" : "outline"}
           size="sm"
           onClick={() => setRelatorio("situacao")}
         >
@@ -111,15 +83,7 @@ export function RelatorioProdutosEstoque({
         </Button>
         <Button
           type="button"
-          variant={relatorio === "vendidos" ? "secondary" : "ghost"}
-          size="sm"
-          onClick={() => setRelatorio("vendidos")}
-        >
-          Mais e menos vendidos
-        </Button>
-        <Button
-          type="button"
-          variant={relatorio === "movimentacoes" ? "secondary" : "ghost"}
+          variant={relatorio === "movimentacoes" ? "secondary" : "outline"}
           size="sm"
           onClick={() => setRelatorio("movimentacoes")}
         >
@@ -158,66 +122,6 @@ export function RelatorioProdutosEstoque({
             </Card>
           </div>
           <EstoqueSituacao produtos={produtos} />
-        </div>
-      )}
-
-      {relatorio === "vendidos" && (
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <DateRangeFilter onChange={setRangeVendidos} />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => setOrdem((o) => (o === "desc" ? "asc" : "desc"))}
-            >
-              <ArrowDownUp className="size-3.5" />
-              {ordem === "desc" ? "Mais vendidos" : "Menos vendidos"}
-            </Button>
-          </div>
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <table className="w-full min-w-max text-sm">
-              <thead className="bg-muted text-left text-xs uppercase text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-2.5 font-medium">Produto</th>
-                  <th className="px-4 py-2.5 font-medium">Quantidade vendida</th>
-                  <th className="px-4 py-2.5 font-medium">Faturamento</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {ranking.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="px-4 py-10 text-center text-muted-foreground">
-                      Nenhuma venda nesse período.
-                    </td>
-                  </tr>
-                ) : (
-                  ranking.map((p) => {
-                    const imagem = imagemPorNome.get(p.nome);
-                    return (
-                      <tr key={p.nome}>
-                        <td className="px-4 py-2.5 font-medium text-foreground">
-                          <div className="flex items-center gap-2">
-                            <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded border border-border bg-muted">
-                              {imagem && (
-                                <img src={imagem} alt="" className="size-full object-contain" />
-                              )}
-                            </div>
-                            {p.nome}
-                          </div>
-                        </td>
-                        <td className="px-4 py-2.5 text-foreground">{p.quantidade}</td>
-                        <td className="px-4 py-2.5 text-foreground">
-                          {formatCurrency(p.faturamento)}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
         </div>
       )}
 

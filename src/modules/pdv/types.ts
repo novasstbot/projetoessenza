@@ -51,7 +51,7 @@ export type VendaCaixa = {
   desconto: number;
   status: "concluida" | "cancelada";
   created_at: string;
-  customers: { full_name: string } | null;
+  customers: { id: string; full_name: string } | null;
   itens_venda: ItemVendaCaixa[];
   venda_pagamentos: PagamentoVendaCaixa[];
 };

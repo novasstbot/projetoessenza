@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { RelatorioVendasCaixa } from "@/components/relatorios/relatorio-vendas-caixa";
 import { RelatorioProdutosEstoque } from "@/components/relatorios/relatorio-produtos-estoque";
+import { RelatorioComercial } from "@/components/relatorios/relatorio-comercial";
 import type { CaixaPeriodo, MovimentoCaixaPeriodo } from "@/modules/financeiro/types";
 import type { MovimentacaoEstoquePeriodo, ProdutoEstoqueDetalhado } from "@/modules/estoque/types";
 import type { VendaCaixa } from "@/modules/pdv/types";
@@ -53,7 +54,7 @@ export function RelatoriosShell({
           <Button
             key={c.id}
             type="button"
-            variant={categoria === c.id ? "secondary" : "ghost"}
+            variant={categoria === c.id ? "secondary" : "outline"}
             size="sm"
             onClick={() => setCategoria(c.id)}
           >
@@ -62,17 +63,17 @@ export function RelatoriosShell({
         ))}
       </div>
 
+      <hr className="border-border" />
+
       {categoria === "financeiro" && (
         <RelatorioVendasCaixa vendas={vendas} caixasPeriodo={caixasPeriodo} />
       )}
       {categoria === "produtos-estoque" && (
-        <RelatorioProdutosEstoque
-          produtos={produtosEstoque}
-          movimentos={movimentosEstoque}
-          vendas={vendas}
-        />
+        <RelatorioProdutosEstoque produtos={produtosEstoque} movimentos={movimentosEstoque} />
       )}
-      {categoria === "comercial" && <CategoriaEmConstrucao />}
+      {categoria === "comercial" && (
+        <RelatorioComercial vendas={vendas} produtos={produtosEstoque} />
+      )}
       {categoria === "compras-fornecedores" && <CategoriaEmConstrucao />}
     </div>
   );

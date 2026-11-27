@@ -19,7 +19,7 @@ export async function getVendasPeriodo() {
   const { data, error } = await supabase
     .from("vendas")
     .select(
-      "id, total, desconto, status, created_at, customers(full_name), itens_venda(quantidade, preco_unitario, subtotal, produto_variantes(nome)), venda_pagamentos(valor, formas_pagamento(nome))",
+      "id, total, desconto, status, created_at, customers(id, full_name), itens_venda(quantidade, preco_unitario, subtotal, produto_variantes(nome)), venda_pagamentos(valor, formas_pagamento(nome))",
     )
     .gte("created_at", dozeMesesAtras())
     .order("created_at", { ascending: false });

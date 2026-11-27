@@ -341,7 +341,7 @@ function PaymentForm({
   }
 
   const linhaCartaoSemModalidade = lines.some(
-    (l) => formasPagamento.find((f) => f.id === l.forma_pagamento_id)?.eh_cartao && !l.operadora_modalidade_id,
+    (l) => formasPagamento.find((f) => f.id === l.forma_pagamento_id)?.usa_operadora && !l.operadora_modalidade_id,
   );
 
   async function handleFinalizar() {
@@ -423,7 +423,7 @@ function PaymentForm({
               )}
             </div>
 
-            {forma?.eh_cartao && (
+            {forma?.usa_operadora && (
               <div className="space-y-1">
                 <Select
                   value={line.operadora_modalidade_id ?? ""}

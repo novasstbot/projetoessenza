@@ -60,12 +60,17 @@ export const movimentacaoCategoriaLabels: Record<MovimentacaoCategoria, string> 
   retirada_socio: "Retirada do proprietário",
 };
 
-export type OperadoraModalidadeTipo = "debito" | "credito_vista" | "credito_parcelado";
+export type OperadoraModalidadeTipo =
+  | "debito"
+  | "credito_vista"
+  | "credito_parcelado"
+  | "boleto";
 
 export const modalidadeLabels: Record<OperadoraModalidadeTipo, string> = {
   debito: "Débito",
   credito_vista: "Crédito à vista",
   credito_parcelado: "Crédito parcelado",
+  boleto: "Boleto",
 };
 
 export type OperadoraModalidade = {

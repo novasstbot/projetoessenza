@@ -6,17 +6,17 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/logo";
 import { navItems } from "@/components/layout/nav-items";
-import type { UserRole } from "@/server/auth/session";
 
 type SidebarProps = {
   open: boolean;
   onClose: () => void;
-  role: UserRole;
+  menusNegados: string[];
 };
 
-export function Sidebar({ open, onClose, role }: SidebarProps) {
+export function Sidebar({ open, onClose, menusNegados }: SidebarProps) {
   const pathname = usePathname();
-  const visibleItems = navItems.filter((item) => !item.roles || item.roles.includes(role));
+  const negados = new Set(menusNegados);
+  const visibleItems = navItems.filter((item) => !negados.has(item.id));
 
   return (
     <>

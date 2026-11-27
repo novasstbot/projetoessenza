@@ -8,6 +8,7 @@ export type Profile = {
   id: string;
   full_name: string | null;
   role: UserRole;
+  ativo: boolean;
 };
 
 export async function getSession() {
@@ -23,7 +24,7 @@ export async function getProfile(): Promise<Profile | null> {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, full_name, role")
+    .select("id, full_name, role, ativo")
     .eq("id", userData.user.id)
     .single();
 
@@ -38,7 +39,7 @@ export async function requireSession() {
 
 export async function requireRole(roles: UserRole[]) {
   const profile = await getProfile();
-  if (!profile || !roles.includes(profile.role)) {
+  if (!profile || !profile.ativo || !roles.includes(profile.role)) {
     redirect("/dashboard");
   }
   return profile;

@@ -15,7 +15,7 @@ export async function createFormaPagamento(values: FormaPagamentoFormValues) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("formas_pagamento")
-    .insert({ nome: parsed.nome, eh_cartao: parsed.ehCartao })
+    .insert({ nome: parsed.nome, usa_operadora: parsed.usaOperadora })
     .select("id")
     .single();
 

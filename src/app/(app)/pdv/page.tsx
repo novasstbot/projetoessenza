@@ -93,9 +93,9 @@ export default async function PdvPage() {
       // aparecem aqui até alguém configurar o destino em Configurações.
       supabase
         .from("formas_pagamento")
-        .select("id, nome, eh_cartao")
+        .select("id, nome, usa_operadora")
         .eq("ativo", true)
-        .or("eh_cartao.eq.true,conta_financeira_id.not.is.null")
+        .or("usa_operadora.eq.true,conta_financeira_id.not.is.null")
         .order("nome"),
       supabase
         .from("customers")

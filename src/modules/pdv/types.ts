@@ -1,14 +1,14 @@
 export type FormaPagamento = {
   id: string;
   nome: string;
-  eh_cartao: boolean;
+  usa_operadora: boolean;
 };
 
 export type FormaPagamentoConfig = {
   id: string;
   nome: string;
   ativo: boolean;
-  eh_cartao: boolean;
+  usa_operadora: boolean;
   conta_financeira_id: string | null;
 };
 

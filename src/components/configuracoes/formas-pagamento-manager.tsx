@@ -26,7 +26,7 @@ import type { ContaFinanceira } from "@/modules/financeiro/types";
 function NovaFormaPagamentoForm({ onDone }: { onDone: () => void }) {
   const router = useRouter();
   const [nome, setNome] = useState("");
-  const [ehCartao, setEhCartao] = useState(false);
+  const [usaOperadora, setUsaOperadora] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleCreate() {
@@ -36,7 +36,7 @@ function NovaFormaPagamentoForm({ onDone }: { onDone: () => void }) {
     }
     setSubmitting(true);
     try {
-      await createFormaPagamento({ nome: nome.trim(), ehCartao });
+      await createFormaPagamento({ nome: nome.trim(), usaOperadora });
       toast.success("Forma de pagamento criada.");
       router.refresh();
       onDone();
@@ -55,20 +55,22 @@ function NovaFormaPagamentoForm({ onDone }: { onDone: () => void }) {
         placeholder="Ex.: Vale-presente, Boleto"
       />
       <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">É uma forma de pagamento no cartão?</span>
+        <span className="text-sm text-muted-foreground">
+          Tem taxa e prazo de recebimento (cartão, boleto, etc.)?
+        </span>
         <Button
           type="button"
           size="xs"
-          variant={ehCartao ? "default" : "outline"}
-          onClick={() => setEhCartao(true)}
+          variant={usaOperadora ? "default" : "outline"}
+          onClick={() => setUsaOperadora(true)}
         >
           Sim
         </Button>
         <Button
           type="button"
           size="xs"
-          variant={!ehCartao ? "default" : "outline"}
-          onClick={() => setEhCartao(false)}
+          variant={!usaOperadora ? "default" : "outline"}
+          onClick={() => setUsaOperadora(false)}
         >
           Não
         </Button>
@@ -141,30 +143,36 @@ export function FormasPagamentoManager({
           >
             <div className="flex items-center gap-1.5">
               <span className="font-medium text-foreground">{forma.nome}</span>
-              {forma.eh_cartao && <Badge variant="outline">Cartão</Badge>}
+              {forma.usa_operadora && <Badge variant="outline">Taxa/prazo</Badge>}
               {!forma.ativo && <Badge variant="outline">Inativa</Badge>}
             </div>
             <div className="flex items-center gap-1.5">
-              <Select
-                value={forma.conta_financeira_id ?? undefined}
-                onValueChange={(v) => v && handleChangeConta(forma.id, v)}
-              >
-                <SelectTrigger className="w-64">
-                  <SelectValue>
-                    {() =>
-                      contas.find((c) => c.id === forma.conta_financeira_id)?.nome ??
-                      "Selecione a conta de destino"
-                    }
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {contas.map((conta) => (
-                    <SelectItem key={conta.id} value={conta.id}>
-                      {conta.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {forma.usa_operadora ? (
+                <span className="text-xs text-muted-foreground">
+                  Destino configurado por operadora/modalidade
+                </span>
+              ) : (
+                <Select
+                  value={forma.conta_financeira_id ?? undefined}
+                  onValueChange={(v) => v && handleChangeConta(forma.id, v)}
+                >
+                  <SelectTrigger className="w-64">
+                    <SelectValue>
+                      {() =>
+                        contas.find((c) => c.id === forma.conta_financeira_id)?.nome ??
+                        "Selecione a conta de destino"
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {contas.map((conta) => (
+                      <SelectItem key={conta.id} value={conta.id}>
+                        {conta.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <Button
                 type="button"
                 variant="ghost"

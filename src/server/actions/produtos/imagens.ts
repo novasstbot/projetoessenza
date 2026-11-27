@@ -15,7 +15,7 @@ const CONFIG = {
 const TIPOS_ACEITOS = ["image/jpeg", "image/png", "image/webp"];
 const TAMANHO_MAXIMO = 10 * 1024 * 1024;
 
-async function processarImagem(buffer: Buffer) {
+export async function processarImagem(buffer: Buffer) {
   const base = sharp(buffer).rotate();
 
   const thumb = await base

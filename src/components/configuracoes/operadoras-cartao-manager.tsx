@@ -260,6 +260,7 @@ function OperadoraCard({ operadora, contas }: { operadora: OperadoraCartao; cont
 
   const debito = operadora.operadora_modalidades.find((m) => m.modalidade === "debito");
   const creditoVista = operadora.operadora_modalidades.find((m) => m.modalidade === "credito_vista");
+  const boleto = operadora.operadora_modalidades.find((m) => m.modalidade === "boleto");
   const parcelados = operadora.operadora_modalidades
     .filter((m) => m.modalidade === "credito_parcelado")
     .sort((a, b) => a.parcelas - b.parcelas);
@@ -274,7 +275,7 @@ function OperadoraCard({ operadora, contas }: { operadora: OperadoraCartao; cont
   }
 
   function renderSlot(
-    tipo: Extract<OperadoraModalidadeTipo, "debito" | "credito_vista">,
+    tipo: Extract<OperadoraModalidadeTipo, "debito" | "credito_vista" | "boleto">,
     existente: OperadoraModalidade | undefined,
   ) {
     const key = `novo-${tipo}`;
@@ -334,6 +335,10 @@ function OperadoraCard({ operadora, contas }: { operadora: OperadoraCartao; cont
         <div>
           <p className="mb-1 text-xs font-medium text-muted-foreground">Crédito à vista</p>
           {renderSlot("credito_vista", creditoVista)}
+        </div>
+        <div>
+          <p className="mb-1 text-xs font-medium text-muted-foreground">Boleto</p>
+          {renderSlot("boleto", boleto)}
         </div>
         <div>
           <p className="mb-1 text-xs font-medium text-muted-foreground">Crédito parcelado</p>
@@ -405,7 +410,7 @@ export function OperadorasCartaoManager({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Operadoras de cartão</CardTitle>
+        <CardTitle className="text-base">Operadoras e formas de recebimento</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex gap-2">

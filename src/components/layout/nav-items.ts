@@ -13,35 +13,28 @@ import {
   Settings,
   type LucideIcon,
 } from "lucide-react";
-import type { UserRole } from "@/server/auth/session";
 
 export type NavItem = {
+  // Mesmo id usado em permissoes_menu_negadas (role, menu_id) — por padrão
+  // todo item aparece pra todo mundo; só aparece negado se existir uma
+  // linha pra esse papel + esse id (ver Configurações → Permissões).
+  id: string;
   label: string;
   href: string;
   icon: LucideIcon;
-  // Sem esse campo, o item aparece pra todo mundo. Hoje só o vendedor tem
-  // o menu restrito (vira só PDV, já que abrir/fechar caixa e
-  // sangria/suprimento/despesa moraram pro PDV).
-  roles?: UserRole[];
 };
 
-// Fora do PDV, todo o resto continua igual pra admin/gerente/estoquista
-// (sidebar nunca restringiu ninguém antes) — só o vendedor passa a ver
-// só "PDV / Vendas", já que abrir/fechar caixa e sangria/suprimento/
-// despesa moraram todos pro PDV.
-const todosMenosVendedor: UserRole[] = ["admin", "gerente", "estoquista"];
-
 export const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: todosMenosVendedor },
-  { label: "PDV / Vendas", href: "/pdv", icon: ShoppingCart },
-  { label: "Produtos", href: "/produtos", icon: Package, roles: todosMenosVendedor },
-  { label: "Estoque", href: "/estoque", icon: Boxes, roles: todosMenosVendedor },
-  { label: "Compras", href: "/compras", icon: Truck, roles: todosMenosVendedor },
-  { label: "Clientes", href: "/clientes", icon: Users, roles: todosMenosVendedor },
-  { label: "Fornecedores", href: "/fornecedores", icon: Building2, roles: todosMenosVendedor },
-  { label: "Financeiro", href: "/financeiro", icon: Wallet, roles: todosMenosVendedor },
-  { label: "Caixa", href: "/caixa", icon: Landmark, roles: todosMenosVendedor },
-  { label: "Relatórios", href: "/relatorios", icon: BarChart3, roles: todosMenosVendedor },
-  { label: "Marketing e Relacionamento", href: "/marketing", icon: Mail, roles: todosMenosVendedor },
-  { label: "Configurações", href: "/configuracoes", icon: Settings, roles: todosMenosVendedor },
+  { id: "dashboard", label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { id: "pdv", label: "PDV / Vendas", href: "/pdv", icon: ShoppingCart },
+  { id: "produtos", label: "Produtos", href: "/produtos", icon: Package },
+  { id: "estoque", label: "Estoque", href: "/estoque", icon: Boxes },
+  { id: "compras", label: "Compras", href: "/compras", icon: Truck },
+  { id: "clientes", label: "Clientes", href: "/clientes", icon: Users },
+  { id: "fornecedores", label: "Fornecedores", href: "/fornecedores", icon: Building2 },
+  { id: "financeiro", label: "Financeiro", href: "/financeiro", icon: Wallet },
+  { id: "caixa", label: "Caixa", href: "/caixa", icon: Landmark },
+  { id: "relatorios", label: "Relatórios", href: "/relatorios", icon: BarChart3 },
+  { id: "marketing", label: "Marketing e Relacionamento", href: "/marketing", icon: Mail },
+  { id: "configuracoes", label: "Configurações", href: "/configuracoes", icon: Settings },
 ];

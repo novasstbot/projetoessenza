@@ -127,11 +127,11 @@ export function TaxonomyManager({
           </Button>
         }
       />
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Categorias, marcas e linhas</DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
           <TaxonomyList
             label="Categorias"
             items={categorias}

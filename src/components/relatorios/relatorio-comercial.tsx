@@ -5,6 +5,7 @@ import { ArrowDownUp, LayoutGrid, List, Users } from "lucide-react";
 import { DateRangeFilter, type DateRange } from "@/components/ui/date-range-filter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Autocomplete } from "@/components/ui/autocomplete";
 import {
   Select,
   SelectContent,
@@ -352,18 +353,16 @@ export function RelatorioComercial({
 
       {relatorio === "cliente-por-produto" && (
         <div className="space-y-4">
-          <Select value={produtoEscolhido} onValueChange={(v) => setProdutoEscolhido(v ?? "")}>
-            <SelectTrigger className="w-72">
-              <SelectValue>{() => produtoEscolhido || "Selecione um produto"}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {produtosVendidos.map((nome) => (
-                <SelectItem key={nome} value={nome}>
-                  {nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="w-72">
+            <Autocomplete
+              items={produtosVendidos}
+              value={produtoEscolhido}
+              onChange={setProdutoEscolhido}
+              getId={(nome) => nome}
+              getLabel={(nome) => nome}
+              placeholder="Buscar produto"
+            />
+          </div>
           {produtoEscolhido ? (
             <RankingTable
               linhas={clientesPorProduto}

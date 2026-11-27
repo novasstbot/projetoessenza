@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { IntegerInput } from "@/components/ui/integer-input";
+import { Autocomplete } from "@/components/ui/autocomplete";
 import {
   Form,
   FormControl,
@@ -64,27 +65,15 @@ export function MovementForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Produto</FormLabel>
-              <Select value={field.value} onValueChange={(value) => field.onChange(value ?? "")}>
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue>
-                      {() => {
-                        const variante = variantes.find((v) => v.id === field.value);
-                        return variante
-                          ? `${variante.produto_nome} — ${variante.nome} (${variante.codigo_interno})`
-                          : "Selecione um produto";
-                      }}
-                    </SelectValue>
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {variantes.map((variante) => (
-                    <SelectItem key={variante.id} value={variante.id}>
-                      {variante.produto_nome} — {variante.nome} ({variante.codigo_interno})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Autocomplete
+                items={variantes}
+                value={field.value}
+                onChange={field.onChange}
+                getId={(v) => v.id}
+                getLabel={(v) => `${v.produto_nome} — ${v.nome}`}
+                getSublabel={(v) => v.codigo_interno}
+                placeholder="Buscar produto por nome ou código"
+              />
               <FormMessage />
             </FormItem>
           )}

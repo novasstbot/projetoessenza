@@ -3,8 +3,11 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { ContasPagarSection } from "@/components/financeiro/contas-pagar-section";
 import { ContasReceberSection } from "@/components/financeiro/contas-receber-section";
+import { ContasFinanceirasSaldos } from "@/components/financeiro/contas-financeiras-saldos";
+import { TransferenciaDialog } from "@/components/financeiro/transferencia-dialog";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/server/auth/session";
+import { buildTotaisPorCaixa } from "@/lib/caixa/totais";
 import type { ContaFinanceira, ContaPagar, ContaReceber } from "@/modules/financeiro/types";
 
 function formatCurrency(value: number) {
@@ -41,6 +44,8 @@ export default async function FinanceiroPage() {
     { data: contasFinanceiras },
     { data: fornecedores },
     { data: clientes },
+    { data: movFinanceiras },
+    { data: caixaAberto },
   ] = await Promise.all([
     supabase
       .from("contas_pagar")
@@ -50,9 +55,17 @@ export default async function FinanceiroPage() {
       .from("contas_receber")
       .select("id, descricao, valor, vencimento, status, recebido_em, customers(full_name)")
       .order("vencimento"),
-    supabase.from("contas_financeiras").select("id, nome, tipo, ativo").eq("ativo", true).order("nome"),
+    supabase
+      .from("contas_financeiras")
+      .select(
+        "id, nome, tipo, ativo, banco_nome, agencia, numero_conta, saldo_inicial, data_saldo_inicial",
+      )
+      .eq("ativo", true)
+      .order("nome"),
     supabase.from("fornecedores").select("id, nome, cnpj_cpf, telefone, email, ativo").eq("ativo", true).order("nome"),
     supabase.from("customers").select("id, full_name").eq("ativo", true).order("full_name"),
+    supabase.from("movimentacoes_financeiras").select("conta_id, tipo, valor"),
+    supabase.from("caixas").select("id, valor_abertura").eq("status", "aberto").maybeSingle(),
   ]);
 
   const pagarList = (contasPagar as unknown as ContaPagar[]) ?? [];
@@ -66,9 +79,40 @@ export default async function FinanceiroPage() {
     .filter((c) => c.status === "pendente")
     .reduce((sum, c) => sum + c.valor, 0);
 
+  // Saldo por conta vem do histórico de movimentacoes_financeiras — Caixa
+  // Físico é especial-casado pro "esperado" da sessão aberta, já que vendas
+  // em dinheiro nunca geram linha em movimentacoes_financeiras (vão só pro
+  // ledger da sessão de caixa, movimentacoes_caixa).
+  const saldosContas = new Map<string, number>();
+  for (const mov of movFinanceiras ?? []) {
+    const atual = saldosContas.get(mov.conta_id) ?? 0;
+    saldosContas.set(mov.conta_id, atual + (mov.tipo === "entrada" ? mov.valor : -mov.valor));
+  }
+  if (caixaAberto) {
+    const { data: movimentosCaixa } = await supabase
+      .from("movimentacoes_caixa")
+      .select("caixa_id, tipo, valor")
+      .eq("caixa_id", caixaAberto.id);
+    const totais = buildTotaisPorCaixa(movimentosCaixa ?? []).get(caixaAberto.id) ?? {
+      entradas: 0,
+      saidas: 0,
+    };
+    const esperado = caixaAberto.valor_abertura + totais.entradas - totais.saidas;
+    const caixaFisico = contasFinanceirasList.find((c) => c.tipo === "caixa_fisico");
+    if (caixaFisico) saldosContas.set(caixaFisico.id, esperado);
+  }
+
   return (
     <div>
-      <PageHeader title="Financeiro" description="Contas a pagar e a receber da Essenza." />
+      <PageHeader
+        title="Financeiro"
+        description="Contas a pagar e a receber da Essenza."
+        actions={<TransferenciaDialog contas={contasFinanceirasList} />}
+      />
+
+      <div className="mb-6">
+        <ContasFinanceirasSaldos contas={contasFinanceirasList} saldos={saldosContas} />
+      </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Card>

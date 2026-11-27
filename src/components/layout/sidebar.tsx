@@ -6,14 +6,17 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/logo";
 import { navItems } from "@/components/layout/nav-items";
+import type { UserRole } from "@/server/auth/session";
 
 type SidebarProps = {
   open: boolean;
   onClose: () => void;
+  role: UserRole;
 };
 
-export function Sidebar({ open, onClose }: SidebarProps) {
+export function Sidebar({ open, onClose, role }: SidebarProps) {
   const pathname = usePathname();
+  const visibleItems = navItems.filter((item) => !item.roles || item.roles.includes(role));
 
   return (
     <>
@@ -43,7 +46,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 pb-6">
-          {navItems.map((item) => {
+          {visibleItems.map((item) => {
             const isActive =
               pathname === item.href || pathname.startsWith(`${item.href}/`);
             const Icon = item.icon;

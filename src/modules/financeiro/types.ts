@@ -11,6 +11,11 @@ export type ContaFinanceira = {
   nome: string;
   tipo: ContaFinanceiraTipo;
   ativo: boolean;
+  banco_nome: string | null;
+  agencia: string | null;
+  numero_conta: string | null;
+  saldo_inicial: number;
+  data_saldo_inicial: string | null;
 };
 
 export type SangriaDestinoTipo =
@@ -37,7 +42,9 @@ export type MovimentacaoCategoria =
   | "ajuste"
   | "transferencia"
   | "pagamento"
-  | "recebimento";
+  | "recebimento"
+  | "aporte"
+  | "retirada_socio";
 
 export const movimentacaoCategoriaLabels: Record<MovimentacaoCategoria, string> = {
   venda: "Venda",
@@ -49,6 +56,17 @@ export const movimentacaoCategoriaLabels: Record<MovimentacaoCategoria, string> 
   transferencia: "Transferência",
   pagamento: "Pagamento",
   recebimento: "Recebimento",
+  aporte: "Aporte",
+  retirada_socio: "Retirada do proprietário",
+};
+
+export type MovimentoExtratoConta = {
+  id: string;
+  tipo: "entrada" | "saida";
+  categoria: MovimentacaoCategoria;
+  valor: number;
+  descricao: string;
+  created_at: string;
 };
 
 export type MovimentacaoCaixaDetalhe = {

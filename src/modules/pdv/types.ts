@@ -3,6 +3,13 @@ export type FormaPagamento = {
   nome: string;
 };
 
+export type FormaPagamentoConfig = {
+  id: string;
+  nome: string;
+  ativo: boolean;
+  conta_financeira_id: string | null;
+};
+
 export type ProdutoPdv = {
   id: string;
   nome: string;

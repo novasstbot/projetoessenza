@@ -17,7 +17,7 @@ export function AppShell({ fullName, email, role, children }: AppShellProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} role={role} />
 
       <div className="flex min-h-screen flex-col lg:pl-64">
         <Header

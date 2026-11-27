@@ -4,14 +4,20 @@ import { PdvScreen } from "@/components/pdv/pdv-screen";
 import { createClient } from "@/lib/supabase/server";
 import { resolverThumb } from "@/lib/produtos/imagem";
 import { unwrapRelacao } from "@/lib/supabase/relations";
+import { buildTotaisPorCaixa } from "@/lib/caixa/totais";
+import { requireRole } from "@/server/auth/session";
 import type { ProdutoPdv } from "@/modules/pdv/types";
+import type { ContaFinanceira } from "@/modules/financeiro/types";
 
 export default async function PdvPage() {
-  const supabase = await createClient();
+  const [supabase] = await Promise.all([
+    createClient(),
+    requireRole(["admin", "gerente", "vendedor"]),
+  ]);
 
   const { data: caixa } = await supabase
     .from("caixas")
-    .select("id, aberto_em")
+    .select("id, valor_abertura, aberto_em")
     .eq("status", "aberto")
     .maybeSingle();
 
@@ -24,8 +30,14 @@ export default async function PdvPage() {
     );
   }
 
-  const [{ data: variantes }, { data: estoqueAtual }, { data: formasPagamento }, { data: clientes }] =
-    await Promise.all([
+  const [
+    { data: variantes },
+    { data: estoqueAtual },
+    { data: formasPagamento },
+    { data: clientes },
+    { data: movimentosCaixa },
+    { data: contasFinanceiras },
+  ] = await Promise.all([
       supabase
         .from("produto_variantes")
         .select(
@@ -41,7 +53,22 @@ export default async function PdvPage() {
         .select("id, full_name, cpf_cnpj")
         .eq("ativo", true)
         .order("full_name"),
+      supabase.from("movimentacoes_caixa").select("caixa_id, tipo, valor").eq("caixa_id", caixa.id),
+      supabase
+        .from("contas_financeiras")
+        .select(
+          "id, nome, tipo, ativo, banco_nome, agencia, numero_conta, saldo_inicial, data_saldo_inicial",
+        )
+        .eq("ativo", true)
+        .neq("tipo", "caixa_fisico")
+        .order("nome"),
     ]);
+
+  const totais = buildTotaisPorCaixa(movimentosCaixa ?? []).get(caixa.id) ?? {
+    entradas: 0,
+    saidas: 0,
+  };
+  const esperado = caixa.valor_abertura + totais.entradas - totais.saidas;
 
   const estoquePorVariante = new Map(
     (estoqueAtual ?? []).map((item) => [item.variante_id, item.quantidade_atual]),
@@ -76,6 +103,8 @@ export default async function PdvPage() {
         clientes={clientes ?? []}
         caixaId={caixa.id}
         caixaAbertoEm={caixa.aberto_em}
+        esperado={esperado}
+        contasSuprimento={(contasFinanceiras as ContaFinanceira[]) ?? []}
       />
     </div>
   );

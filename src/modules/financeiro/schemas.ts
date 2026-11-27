@@ -61,3 +61,34 @@ export const estornoSchema = z.object({
   motivo: z.string().min(3, "Descreva o motivo"),
 });
 export type EstornoFormValues = z.infer<typeof estornoSchema>;
+
+export const contaFinanceiraSchema = z.object({
+  nome: z.string().min(2, "Informe o nome da conta"),
+  tipo: z.enum(["caixa_fisico", "cofre", "banco", "pix", "recebiveis_cartao", "transito"]),
+  bancoNome: z.string().optional().or(z.literal("")),
+  agencia: z.string().optional().or(z.literal("")),
+  numeroConta: z.string().optional().or(z.literal("")),
+  saldoInicial: z.number().min(0, "Saldo inicial não pode ser negativo"),
+  dataSaldoInicial: z.string().optional().or(z.literal("")),
+});
+export type ContaFinanceiraFormValues = z.infer<typeof contaFinanceiraSchema>;
+
+export const transferenciaSchema = z
+  .object({
+    contaOrigemId: z.string().uuid("Selecione a conta de origem"),
+    contaDestinoId: z.string().uuid("Selecione a conta de destino"),
+    valor: z.number().positive("Informe um valor maior que zero"),
+    motivo: z.string().min(3, "Descreva o motivo"),
+  })
+  .refine((v) => v.contaOrigemId !== v.contaDestinoId, {
+    message: "Origem e destino não podem ser a mesma conta",
+    path: ["contaDestinoId"],
+  });
+export type TransferenciaFormValues = z.infer<typeof transferenciaSchema>;
+
+export const aporteRetiradaSchema = z.object({
+  contaId: z.string().uuid("Selecione a conta"),
+  valor: z.number().positive("Informe um valor maior que zero"),
+  motivo: z.string().min(3, "Descreva o motivo"),
+});
+export type AporteRetiradaFormValues = z.infer<typeof aporteRetiradaSchema>;

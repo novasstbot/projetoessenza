@@ -142,3 +142,19 @@ export async function estornarBaixaContaReceber(contaId: string, values: Estorno
   revalidatePath("/caixa");
   revalidatePath("/dashboard");
 }
+
+export async function getExtratoConta(contaId: string) {
+  await requireRole(["admin", "gerente"]);
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("movimentacoes_financeiras")
+    .select("id, tipo, categoria, valor, descricao, created_at")
+    .eq("conta_id", contaId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (error) throw new Error(error.message);
+
+  return data;
+}

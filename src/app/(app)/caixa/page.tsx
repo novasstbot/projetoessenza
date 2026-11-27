@@ -4,17 +4,11 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ContasFinanceirasList } from "@/components/caixa/contas-financeiras-list";
-import { SangriaDialog } from "@/components/caixa/sangria-dialog";
-import { SuprimentoDialog } from "@/components/caixa/suprimento-dialog";
-import { DespesaDialog } from "@/components/caixa/despesa-dialog";
 import { AjusteDialog } from "@/components/caixa/ajuste-dialog";
-import { FechamentoDialog } from "@/components/caixa/fechamento-dialog";
 import { DetalhesCaixaDialog } from "@/components/caixa/detalhes-caixa-dialog";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/server/auth/session";
 import { buildTotaisPorCaixa } from "@/lib/caixa/totais";
-import type { ContaFinanceira } from "@/modules/financeiro/types";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -25,14 +19,10 @@ function formatDateTime(value: string) {
 }
 
 export default async function CaixaPage() {
-  const [supabase, profile] = await Promise.all([
+  const [supabase] = await Promise.all([
     createClient(),
-    requireRole(["admin", "gerente", "vendedor"]),
+    requireRole(["admin", "gerente"]),
   ]);
-  // Vendedor opera o caixa (sangria/suprimento/despesa/fechamento) mas não
-  // vê saldo das contas financeiras nem o histórico de fechamentos de
-  // outras sessões — isso fica só pra quem administra o financeiro.
-  const canAjustar = profile.role === "admin" || profile.role === "gerente";
 
   const { data: aberto } = await supabase
     .from("caixas")
@@ -52,20 +42,15 @@ export default async function CaixaPage() {
   const fechadosIds = (fechados ?? []).map((c) => c.id);
   const caixaIdsParaMovimentos = aberto ? [aberto.id, ...fechadosIds] : fechadosIds;
 
-  const [{ data: todosMovimentos }, { data: contas }, { data: movFinanceiras }] =
-    await Promise.all([
-      supabase
-        .from("movimentacoes_caixa")
-        .select("caixa_id, tipo, valor")
-        .in(
-          "caixa_id",
-          caixaIdsParaMovimentos.length > 0
-            ? caixaIdsParaMovimentos
-            : ["00000000-0000-0000-0000-000000000000"],
-        ),
-      supabase.from("contas_financeiras").select("id, nome, tipo, ativo").eq("ativo", true).order("nome"),
-      supabase.from("movimentacoes_financeiras").select("conta_id, tipo, valor"),
-    ]);
+  const { data: todosMovimentos } = await supabase
+    .from("movimentacoes_caixa")
+    .select("caixa_id, tipo, valor")
+    .in(
+      "caixa_id",
+      caixaIdsParaMovimentos.length > 0
+        ? caixaIdsParaMovimentos
+        : ["00000000-0000-0000-0000-000000000000"],
+    );
 
   const totaisPorCaixa = buildTotaisPorCaixa(todosMovimentos ?? []);
 
@@ -74,33 +59,12 @@ export default async function CaixaPage() {
     ? aberto.valor_abertura + (totaisAberto?.entradas ?? 0) - (totaisAberto?.saidas ?? 0)
     : 0;
 
-  const saldosContas = new Map<string, number>();
-  for (const mov of movFinanceiras ?? []) {
-    const atual = saldosContas.get(mov.conta_id) ?? 0;
-    saldosContas.set(mov.conta_id, atual + (mov.tipo === "entrada" ? mov.valor : -mov.valor));
-  }
-  if (aberto) {
-    const caixaFisico = (contas ?? []).find((c) => c.tipo === "caixa_fisico");
-    if (caixaFisico) saldosContas.set(caixaFisico.id, esperadoAberto);
-  }
-
-  const contasOrigemSuprimento = (contas ?? []).filter((c) => c.tipo !== "caixa_fisico");
-
   return (
     <div>
       <PageHeader
         title="Caixa"
-        description="Abertura, fechamento e conferência de valores do caixa."
+        description="Sessões de caixa, ajuste e histórico de fechamentos — abrir/fechar caixa e sangria/suprimento ficam no PDV."
       />
-
-      {canAjustar && (
-        <div className="mb-6">
-          <ContasFinanceirasList
-            contas={(contas as ContaFinanceira[]) ?? []}
-            saldos={saldosContas}
-          />
-        </div>
-      )}
 
       <Card className="mb-6">
         <CardHeader>
@@ -143,12 +107,8 @@ export default async function CaixaPage() {
               </div>
 
               <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-                <SangriaDialog caixaId={aberto.id} />
-                <SuprimentoDialog caixaId={aberto.id} contas={contasOrigemSuprimento as ContaFinanceira[]} />
-                <DespesaDialog caixaId={aberto.id} />
-                {canAjustar && <AjusteDialog caixaId={aberto.id} />}
-                <DetalhesCaixaDialog caixaId={aberto.id} canManage={canAjustar} />
-                <FechamentoDialog caixaId={aberto.id} esperado={esperadoAberto} />
+                <AjusteDialog caixaId={aberto.id} />
+                <DetalhesCaixaDialog caixaId={aberto.id} canManage />
               </div>
 
               <Button
@@ -169,7 +129,6 @@ export default async function CaixaPage() {
         </CardContent>
       </Card>
 
-      {canAjustar && (
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Histórico de fechamentos</CardTitle>
@@ -236,7 +195,7 @@ export default async function CaixaPage() {
                           )}
                         </td>
                         <td className="px-4 py-2.5 text-right">
-                          <DetalhesCaixaDialog caixaId={c.id} canManage={canAjustar} compact />
+                          <DetalhesCaixaDialog caixaId={c.id} canManage compact />
                         </td>
                       </tr>
                     );
@@ -247,7 +206,6 @@ export default async function CaixaPage() {
           </div>
         </CardContent>
       </Card>
-      )}
     </div>
   );
 }

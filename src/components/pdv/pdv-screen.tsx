@@ -11,7 +11,12 @@ import { ProductSearch } from "@/components/pdv/product-search";
 import { CartTable } from "@/components/pdv/cart-table";
 import { PaymentDialog } from "@/components/pdv/payment-dialog";
 import { VendasCaixaDialog } from "@/components/pdv/vendas-caixa-dialog";
+import { SangriaDialog } from "@/components/caixa/sangria-dialog";
+import { SuprimentoDialog } from "@/components/caixa/suprimento-dialog";
+import { DespesaDialog } from "@/components/caixa/despesa-dialog";
+import { FechamentoDialog } from "@/components/caixa/fechamento-dialog";
 import type { CartItem, ClientePdv, FormaPagamento, ProdutoPdv } from "@/modules/pdv/types";
+import type { ContaFinanceira } from "@/modules/financeiro/types";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -23,12 +28,16 @@ export function PdvScreen({
   clientes,
   caixaId,
   caixaAbertoEm,
+  esperado,
+  contasSuprimento,
 }: {
   produtos: ProdutoPdv[];
   formasPagamento: FormaPagamento[];
   clientes: ClientePdv[];
   caixaId: string;
   caixaAbertoEm: string;
+  esperado: number;
+  contasSuprimento: ContaFinanceira[];
 }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [descontoModo, setDescontoModo] = useState<"valor" | "percentual">("valor");
@@ -101,6 +110,13 @@ export function PdvScreen({
               })}
             </span>
             <VendasCaixaDialog caixaId={caixaId} />
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            <SangriaDialog caixaId={caixaId} />
+            <SuprimentoDialog caixaId={caixaId} contas={contasSuprimento} />
+            <DespesaDialog caixaId={caixaId} />
+            <FechamentoDialog caixaId={caixaId} esperado={esperado} />
           </div>
 
           <div className="space-y-1.5">

@@ -18,9 +18,11 @@ const icons: Record<ContaFinanceiraTipo, typeof Wallet> = {
 export function ContasFinanceirasList({
   contas,
   saldos,
+  onSelect,
 }: {
   contas: ContaFinanceira[];
   saldos: Map<string, number>;
+  onSelect?: (conta: ContaFinanceira) => void;
 }) {
   return (
     <Card>
@@ -30,8 +32,8 @@ export function ContasFinanceirasList({
       <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {contas.map((conta) => {
           const Icon = icons[conta.tipo];
-          return (
-            <div key={conta.id} className="rounded-lg border border-border p-3">
+          const content = (
+            <>
               <div className="mb-1 flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Icon className="size-3.5" />
                 {conta.nome}
@@ -39,6 +41,20 @@ export function ContasFinanceirasList({
               <p className="font-semibold text-foreground">
                 {formatCurrency(saldos.get(conta.id) ?? 0)}
               </p>
+            </>
+          );
+          return onSelect ? (
+            <button
+              key={conta.id}
+              type="button"
+              onClick={() => onSelect(conta)}
+              className="rounded-lg border border-border p-3 text-left hover:border-gold/60"
+            >
+              {content}
+            </button>
+          ) : (
+            <div key={conta.id} className="rounded-lg border border-border p-3">
+              {content}
             </div>
           );
         })}

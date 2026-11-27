@@ -89,6 +89,7 @@ export type OperadoraCartao = {
   id: string;
   nome: string;
   ativo: boolean;
+  tipo: "cartao" | "boleto";
   operadora_modalidades: OperadoraModalidade[];
 };
 

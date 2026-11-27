@@ -42,7 +42,7 @@ export default async function ConfiguracoesPage() {
     supabase
       .from("operadoras_cartao")
       .select(
-        "id, nome, ativo, operadora_modalidades(id, operadora_id, modalidade, parcelas, taxa_percentual, taxa_antecipacao_percentual, prazo_dias, conta_destino_id, ativo)",
+        "id, nome, ativo, tipo, operadora_modalidades(id, operadora_id, modalidade, parcelas, taxa_percentual, taxa_antecipacao_percentual, prazo_dias, conta_destino_id, ativo)",
       )
       .order("nome"),
     isAdmin ? getUsuarios() : Promise.resolve([]),

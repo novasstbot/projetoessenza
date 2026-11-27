@@ -52,6 +52,56 @@ export async function toggleOperadoraCartaoAtiva(id: string, ativo: boolean) {
   revalidatePath("/configuracoes");
 }
 
+export async function updateOperadoraCartao(id: string, nome: string) {
+  const profile = await requireRole(["admin"]);
+  const parsed = operadoraCartaoSchema.parse({ nome });
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("operadoras_cartao")
+    .update({ nome: parsed.nome })
+    .eq("id", id);
+
+  if (error) {
+    throw new Error(error.code === "23505" ? "Já existe uma operadora com esse nome." : error.message);
+  }
+
+  await supabase.from("audit_logs").insert({
+    user_id: profile.id,
+    action: "update",
+    entity: "operadoras_cartao",
+    entity_id: id,
+  });
+
+  revalidatePath("/configuracoes");
+}
+
+// Bloqueado pela FK normal (código 23503) quando já existe recebível
+// vinculado — nesse caso é só inativar, não excluir.
+export async function deleteOperadoraCartao(id: string) {
+  const profile = await requireRole(["admin"]);
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("operadoras_cartao").delete().eq("id", id);
+
+  if (error) {
+    throw new Error(
+      error.code === "23503"
+        ? "Não é possível remover: existem recebíveis vinculados. Inative em vez disso."
+        : error.message,
+    );
+  }
+
+  await supabase.from("audit_logs").insert({
+    user_id: profile.id,
+    action: "delete",
+    entity: "operadoras_cartao",
+    entity_id: id,
+  });
+
+  revalidatePath("/configuracoes");
+}
+
 function normalizeModalidade(values: OperadoraModalidadeFormValues) {
   return {
     modalidade: values.modalidade,

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Eye, EyeOff, Plus } from "lucide-react";
+import { Eye, EyeOff, Plus, Pencil, Trash2, Check, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,8 @@ import {
   createFormaPagamento,
   toggleFormaPagamentoAtiva,
   updateFormaPagamentoContaDestino,
+  updateFormaPagamentoNome,
+  deleteFormaPagamento,
 } from "@/server/actions/configuracoes/formas-pagamento";
 import type { FormaPagamentoConfig } from "@/modules/pdv/types";
 import type { ContaFinanceira } from "@/modules/financeiro/types";
@@ -87,6 +89,65 @@ function NovaFormaPagamentoForm({ onDone }: { onDone: () => void }) {
   );
 }
 
+function FormaPagamentoNomeCell({ forma }: { forma: FormaPagamentoConfig }) {
+  const router = useRouter();
+  const [editando, setEditando] = useState(false);
+  const [nome, setNome] = useState(forma.nome);
+  const [salvando, setSalvando] = useState(false);
+
+  async function handleSalvar() {
+    if (nome.trim().length < 2) return;
+    setSalvando(true);
+    try {
+      await updateFormaPagamentoNome(forma.id, nome.trim());
+      toast.success("Nome atualizado.");
+      router.refresh();
+      setEditando(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar.");
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  if (editando) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <Input
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          className="h-8 w-40"
+          onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleSalvar())}
+        />
+        <Button type="button" variant="ghost" size="icon-sm" aria-label="Salvar nome" disabled={salvando} onClick={handleSalvar}>
+          <Check className="size-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Cancelar"
+          onClick={() => {
+            setNome(forma.nome);
+            setEditando(false);
+          }}
+        >
+          <X className="size-4" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="font-medium text-foreground">{forma.nome}</span>
+      <Button type="button" variant="ghost" size="icon-sm" aria-label="Renomear" onClick={() => setEditando(true)}>
+        <Pencil className="size-3.5" />
+      </Button>
+    </div>
+  );
+}
+
 export function FormasPagamentoManager({
   formasPagamento,
   contas,
@@ -116,6 +177,16 @@ export function FormasPagamentoManager({
     }
   }
 
+  async function handleExcluir(forma: FormaPagamentoConfig) {
+    try {
+      await deleteFormaPagamento(forma.id);
+      toast.success("Forma de pagamento removida.");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível remover.");
+    }
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -142,7 +213,7 @@ export function FormasPagamentoManager({
             className={`flex items-center justify-between gap-3 rounded-lg border border-border p-3 ${!forma.ativo ? "opacity-60" : ""}`}
           >
             <div className="flex items-center gap-1.5">
-              <span className="font-medium text-foreground">{forma.nome}</span>
+              <FormaPagamentoNomeCell forma={forma} />
               {forma.usa_operadora && <Badge variant="outline">Taxa/prazo</Badge>}
               {!forma.ativo && <Badge variant="outline">Inativa</Badge>}
             </div>
@@ -181,6 +252,15 @@ export function FormasPagamentoManager({
                 onClick={() => handleToggleAtiva(forma)}
               >
                 {forma.ativo ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Remover"
+                onClick={() => handleExcluir(forma)}
+              >
+                <Trash2 className="size-4" />
               </Button>
             </div>
           </div>

@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Pencil, Eye, EyeOff } from "lucide-react";
+import { Plus, Pencil, Eye, EyeOff, Trash2, Check, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,8 @@ import {
 import {
   createOperadoraCartao,
   toggleOperadoraCartaoAtiva,
+  updateOperadoraCartao,
+  deleteOperadoraCartao,
   createOperadoraModalidade,
   updateOperadoraModalidade,
   toggleOperadoraModalidadeAtiva,
@@ -257,10 +259,12 @@ function OperadoraCard({ operadora, contas }: { operadora: OperadoraCartao; cont
   const router = useRouter();
   const [editando, setEditando] = useState<string | null>(null);
   const [criandoParcela, setCriandoParcela] = useState(false);
+  const [editandoNome, setEditandoNome] = useState(false);
+  const [nome, setNome] = useState(operadora.nome);
+  const [salvandoNome, setSalvandoNome] = useState(false);
 
   const debito = operadora.operadora_modalidades.find((m) => m.modalidade === "debito");
   const creditoVista = operadora.operadora_modalidades.find((m) => m.modalidade === "credito_vista");
-  const boleto = operadora.operadora_modalidades.find((m) => m.modalidade === "boleto");
   const parcelados = operadora.operadora_modalidades
     .filter((m) => m.modalidade === "credito_parcelado")
     .sort((a, b) => a.parcelas - b.parcelas);
@@ -274,8 +278,33 @@ function OperadoraCard({ operadora, contas }: { operadora: OperadoraCartao; cont
     }
   }
 
+  async function handleSalvarNome() {
+    if (nome.trim().length < 2) return;
+    setSalvandoNome(true);
+    try {
+      await updateOperadoraCartao(operadora.id, nome.trim());
+      toast.success("Nome atualizado.");
+      router.refresh();
+      setEditandoNome(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar.");
+    } finally {
+      setSalvandoNome(false);
+    }
+  }
+
+  async function handleExcluir() {
+    try {
+      await deleteOperadoraCartao(operadora.id);
+      toast.success("Operadora removida.");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível remover.");
+    }
+  }
+
   function renderSlot(
-    tipo: Extract<OperadoraModalidadeTipo, "debito" | "credito_vista" | "boleto">,
+    tipo: Extract<OperadoraModalidadeTipo, "debito" | "credito_vista">,
     existente: OperadoraModalidade | undefined,
   ) {
     const key = `novo-${tipo}`;
@@ -312,19 +341,72 @@ function OperadoraCard({ operadora, contas }: { operadora: OperadoraCartao; cont
   return (
     <div className={`rounded-lg border p-3 ${!operadora.ativo ? "opacity-60" : "border-border"}`}>
       <div className="mb-2 flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <span className="font-medium text-foreground">{operadora.nome}</span>
-          {!operadora.ativo && <Badge variant="outline">Inativa</Badge>}
+        {editandoNome ? (
+          <div className="flex items-center gap-1.5">
+            <Input
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              className="h-8 w-48"
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleSalvarNome())}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Salvar nome"
+              disabled={salvandoNome}
+              onClick={handleSalvarNome}
+            >
+              <Check className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Cancelar"
+              onClick={() => {
+                setNome(operadora.nome);
+                setEditandoNome(false);
+              }}
+            >
+              <X className="size-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5">
+            <span className="font-medium text-foreground">{operadora.nome}</span>
+            {!operadora.ativo && <Badge variant="outline">Inativa</Badge>}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Renomear"
+              onClick={() => setEditandoNome(true)}
+            >
+              <Pencil className="size-3.5" />
+            </Button>
+          </div>
+        )}
+        <div className="flex gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={operadora.ativo ? "Desativar" : "Ativar"}
+            onClick={handleToggleOperadora}
+          >
+            {operadora.ativo ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Remover"
+            onClick={handleExcluir}
+          >
+            <Trash2 className="size-4" />
+          </Button>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          aria-label={operadora.ativo ? "Desativar" : "Ativar"}
-          onClick={handleToggleOperadora}
-        >
-          {operadora.ativo ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-        </Button>
       </div>
 
       <div className="space-y-2">
@@ -335,10 +417,6 @@ function OperadoraCard({ operadora, contas }: { operadora: OperadoraCartao; cont
         <div>
           <p className="mb-1 text-xs font-medium text-muted-foreground">Crédito à vista</p>
           {renderSlot("credito_vista", creditoVista)}
-        </div>
-        <div>
-          <p className="mb-1 text-xs font-medium text-muted-foreground">Boleto</p>
-          {renderSlot("boleto", boleto)}
         </div>
         <div>
           <p className="mb-1 text-xs font-medium text-muted-foreground">Crédito parcelado</p>
@@ -382,6 +460,36 @@ function OperadoraCard({ operadora, contas }: { operadora: OperadoraCartao; cont
   );
 }
 
+function BoletoCard({ boleto, contas }: { boleto: OperadoraCartao; contas: ContaFinanceira[] }) {
+  const [editando, setEditando] = useState(false);
+  const modalidade = boleto.operadora_modalidades.find((m) => m.modalidade === "boleto");
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Boleto</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Taxa, antecipação e prazo de recebimento do Boleto — independente de operadora de
+          cartão.
+        </p>
+      </CardHeader>
+      <CardContent>
+        {editando || !modalidade ? (
+          <ModalidadeForm
+            operadoraId={boleto.id}
+            modalidade={modalidade}
+            tipoFixo="boleto"
+            contas={contas}
+            onDone={() => setEditando(false)}
+          />
+        ) : (
+          <ModalidadeRow modalidade={modalidade} contas={contas} onEdit={() => setEditando(true)} />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function OperadorasCartaoManager({
   operadoras,
   contas,
@@ -392,6 +500,9 @@ export function OperadorasCartaoManager({
   const router = useRouter();
   const [nome, setNome] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const boleto = operadoras.find((o) => o.tipo === "boleto");
+  const operadorasCartao = operadoras.filter((o) => o.tipo === "cartao");
 
   async function handleCreate() {
     if (nome.trim().length < 2) return;
@@ -408,31 +519,35 @@ export function OperadorasCartaoManager({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Operadoras e formas de recebimento</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex gap-2">
-          <Input
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            placeholder="Nome da operadora (ex: Stone, Cielo)"
-            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleCreate())}
-          />
-          <Button type="button" size="icon" disabled={submitting} onClick={handleCreate}>
-            <Plus className="size-4" />
-          </Button>
-        </div>
+    <div className="space-y-4">
+      {boleto && <BoletoCard boleto={boleto} contas={contas} />}
 
-        {operadoras.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhuma operadora cadastrada.</p>
-        ) : (
-          operadoras.map((operadora) => (
-            <OperadoraCard key={operadora.id} operadora={operadora} contas={contas} />
-          ))
-        )}
-      </CardContent>
-    </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Operadoras de cartão</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex gap-2">
+            <Input
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              placeholder="Nome da operadora (ex: Stone, Cielo)"
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleCreate())}
+            />
+            <Button type="button" size="icon" disabled={submitting} onClick={handleCreate}>
+              <Plus className="size-4" />
+            </Button>
+          </div>
+
+          {operadorasCartao.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma operadora cadastrada.</p>
+          ) : (
+            operadorasCartao.map((operadora) => (
+              <OperadoraCard key={operadora.id} operadora={operadora} contas={contas} />
+            ))
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

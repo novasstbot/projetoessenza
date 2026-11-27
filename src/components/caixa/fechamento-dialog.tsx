@@ -157,8 +157,8 @@ export function FechamentoDialog({ caixaId, esperado }: { caixaId: string; esper
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button variant="outline" className="gap-1.5">
-            <LockKeyhole className="size-4" />
+          <Button size="sm" className="gap-1.5 bg-black text-white hover:bg-black/80">
+            <LockKeyhole className="size-3.5" />
             Fechar caixa
           </Button>
         }

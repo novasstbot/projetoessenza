@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { OpenCaixaCard } from "@/components/pdv/open-caixa-card";
 import { PdvScreen } from "@/components/pdv/pdv-screen";
+import { CaixasFechadosHoje, type CaixaFechadoHoje } from "@/components/pdv/caixas-fechados-hoje";
 import { createClient } from "@/lib/supabase/server";
 import { resolverThumb } from "@/lib/produtos/imagem";
 import { unwrapRelacao } from "@/lib/supabase/relations";
@@ -10,10 +11,11 @@ import type { ProdutoPdv } from "@/modules/pdv/types";
 import type { ContaFinanceira, OperadoraCartao } from "@/modules/financeiro/types";
 
 export default async function PdvPage() {
-  const [supabase] = await Promise.all([
+  const [supabase, profile] = await Promise.all([
     createClient(),
     requireRole(["admin", "gerente", "vendedor"]),
   ]);
+  const canManage = profile.role === "admin" || profile.role === "gerente";
 
   const { data: caixa } = await supabase
     .from("caixas")
@@ -21,11 +23,49 @@ export default async function PdvPage() {
     .eq("status", "aberto")
     .maybeSingle();
 
+  // Caixas fechados hoje por esse usuário — vendedor não tem mais acesso a
+  // /caixa (que agora é só visão admin/gerente), então essa é a única forma
+  // dele consultar as vendas/movimentações de uma sessão que ele já fechou.
+  const hojeInicio = new Date();
+  hojeInicio.setHours(0, 0, 0, 0);
+
+  const { data: fechadosHojeRaw } = await supabase
+    .from("caixas")
+    .select("id, valor_abertura, valor_fechamento_informado, aberto_em, fechado_em")
+    .eq("status", "fechado")
+    .eq("aberto_por", profile.id)
+    .gte("fechado_em", hojeInicio.toISOString())
+    .order("fechado_em", { ascending: false });
+
+  const fechadosHojeIds = (fechadosHojeRaw ?? []).map((c) => c.id);
+  const { data: movFechadosHoje } =
+    fechadosHojeIds.length > 0
+      ? await supabase
+          .from("movimentacoes_caixa")
+          .select("caixa_id, tipo, valor")
+          .in("caixa_id", fechadosHojeIds)
+      : { data: [] };
+  const totaisFechadosHoje = buildTotaisPorCaixa(movFechadosHoje ?? []);
+
+  const caixasFechadosHoje: CaixaFechadoHoje[] = (fechadosHojeRaw ?? []).map((c) => {
+    const totais = totaisFechadosHoje.get(c.id) ?? { entradas: 0, saidas: 0 };
+    return {
+      id: c.id,
+      valor_abertura: c.valor_abertura,
+      valor_fechamento_informado: c.valor_fechamento_informado,
+      aberto_em: c.aberto_em,
+      fechado_em: c.fechado_em as string,
+      entradas: totais.entradas,
+      saidas: totais.saidas,
+    };
+  });
+
   if (!caixa) {
     return (
-      <div>
+      <div className="space-y-6">
         <PageHeader title="PDV / Vendas" description="Frente de caixa da Essenza." />
         <OpenCaixaCard />
+        <CaixasFechadosHoje caixas={caixasFechadosHoje} canManage={canManage} />
       </div>
     );
   }
@@ -103,7 +143,7 @@ export default async function PdvPage() {
   });
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader title="PDV / Vendas" description="Frente de caixa da Essenza." />
       <PdvScreen
         produtos={produtosPdv}
@@ -115,6 +155,7 @@ export default async function PdvPage() {
         esperado={esperado}
         contasSuprimento={(contasFinanceiras as ContaFinanceira[]) ?? []}
       />
+      <CaixasFechadosHoje caixas={caixasFechadosHoje} canManage={canManage} />
     </div>
   );
 }

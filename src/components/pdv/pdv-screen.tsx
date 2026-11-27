@@ -111,14 +111,16 @@ export function PdvScreen({
                 minute: "2-digit",
               })}
             </span>
-            <VendasCaixaDialog caixaId={caixaId} />
+            <div className="flex items-center gap-1.5">
+              <VendasCaixaDialog caixaId={caixaId} />
+              <FechamentoDialog caixaId={caixaId} esperado={esperado} />
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-1.5">
             <SangriaDialog caixaId={caixaId} />
             <SuprimentoDialog caixaId={caixaId} contas={contasSuprimento} />
             <DespesaDialog caixaId={caixaId} />
-            <FechamentoDialog caixaId={caixaId} esperado={esperado} />
           </div>
 
           <div className="space-y-1.5">

@@ -7,7 +7,7 @@ import { unwrapRelacao } from "@/lib/supabase/relations";
 import { buildTotaisPorCaixa } from "@/lib/caixa/totais";
 import { requireRole } from "@/server/auth/session";
 import type { ProdutoPdv } from "@/modules/pdv/types";
-import type { ContaFinanceira } from "@/modules/financeiro/types";
+import type { ContaFinanceira, OperadoraCartao } from "@/modules/financeiro/types";
 
 export default async function PdvPage() {
   const [supabase] = await Promise.all([
@@ -37,6 +37,7 @@ export default async function PdvPage() {
     { data: clientes },
     { data: movimentosCaixa },
     { data: contasFinanceiras },
+    { data: operadoras },
   ] = await Promise.all([
       supabase
         .from("produto_variantes")
@@ -47,7 +48,7 @@ export default async function PdvPage() {
         .eq("produtos.ativo", true)
         .order("nome"),
       supabase.from("estoque_atual").select("variante_id, quantidade_atual"),
-      supabase.from("formas_pagamento").select("id, nome").eq("ativo", true).order("nome"),
+      supabase.from("formas_pagamento").select("id, nome, eh_cartao").eq("ativo", true).order("nome"),
       supabase
         .from("customers")
         .select("id, full_name, cpf_cnpj")
@@ -61,6 +62,13 @@ export default async function PdvPage() {
         )
         .eq("ativo", true)
         .neq("tipo", "caixa_fisico")
+        .order("nome"),
+      supabase
+        .from("operadoras_cartao")
+        .select(
+          "id, nome, ativo, operadora_modalidades(id, operadora_id, modalidade, parcelas, taxa_percentual, taxa_antecipacao_percentual, prazo_dias, conta_destino_id, ativo)",
+        )
+        .eq("ativo", true)
         .order("nome"),
     ]);
 
@@ -100,6 +108,7 @@ export default async function PdvPage() {
       <PdvScreen
         produtos={produtosPdv}
         formasPagamento={formasPagamento ?? []}
+        operadoras={(operadoras as OperadoraCartao[]) ?? []}
         clientes={clientes ?? []}
         caixaId={caixa.id}
         caixaAbertoEm={caixa.aberto_em}

@@ -16,7 +16,7 @@ import { SuprimentoDialog } from "@/components/caixa/suprimento-dialog";
 import { DespesaDialog } from "@/components/caixa/despesa-dialog";
 import { FechamentoDialog } from "@/components/caixa/fechamento-dialog";
 import type { CartItem, ClientePdv, FormaPagamento, ProdutoPdv } from "@/modules/pdv/types";
-import type { ContaFinanceira } from "@/modules/financeiro/types";
+import type { ContaFinanceira, OperadoraCartao } from "@/modules/financeiro/types";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -25,6 +25,7 @@ function formatCurrency(value: number) {
 export function PdvScreen({
   produtos,
   formasPagamento,
+  operadoras,
   clientes,
   caixaId,
   caixaAbertoEm,
@@ -33,6 +34,7 @@ export function PdvScreen({
 }: {
   produtos: ProdutoPdv[];
   formasPagamento: FormaPagamento[];
+  operadoras: OperadoraCartao[];
   clientes: ClientePdv[];
   caixaId: string;
   caixaAbertoEm: string;
@@ -191,6 +193,7 @@ export function PdvScreen({
         items={items}
         desconto={desconto}
         formasPagamento={formasPagamento}
+        operadoras={operadoras}
         clientes={clientes}
         onSuccess={() => {
           setItems([]);

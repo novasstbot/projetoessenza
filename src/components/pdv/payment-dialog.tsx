@@ -39,13 +39,43 @@ import {
   clienteRapidoSchema,
   type ClienteRapidoFormValues,
 } from "@/modules/clientes/schemas";
+import { modalidadeLabels } from "@/modules/financeiro/types";
 import type { CartItem, ClientePdv, FormaPagamento } from "@/modules/pdv/types";
+import type { OperadoraCartao } from "@/modules/financeiro/types";
+
+type ModalidadeOpcao = {
+  id: string;
+  label: string;
+  taxaPercentual: number;
+};
+
+function montarOpcoesModalidade(operadoras: OperadoraCartao[]): ModalidadeOpcao[] {
+  const opcoes: ModalidadeOpcao[] = [];
+  for (const operadora of operadoras) {
+    if (!operadora.ativo) continue;
+    for (const m of operadora.operadora_modalidades) {
+      if (!m.ativo) continue;
+      const parcelasLabel = m.modalidade === "credito_parcelado" ? ` ${m.parcelas}x` : "";
+      opcoes.push({
+        id: m.id,
+        label: `${operadora.nome} — ${modalidadeLabels[m.modalidade]}${parcelasLabel} (taxa ${m.taxa_percentual}%)`,
+        taxaPercentual: m.taxa_percentual,
+      });
+    }
+  }
+  return opcoes;
+}
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 }
 
-type PaymentLine = { id: string; forma_pagamento_id: string; valor: number };
+type PaymentLine = {
+  id: string;
+  forma_pagamento_id: string;
+  valor: number;
+  operadora_modalidade_id?: string;
+};
 
 function NovoClienteForm({
   onCreated,
@@ -266,18 +296,21 @@ function PaymentForm({
   items,
   desconto,
   formasPagamento,
+  operadoras,
   clientes,
   onSuccess,
 }: {
   items: CartItem[];
   desconto: number;
   formasPagamento: FormaPagamento[];
+  operadoras: OperadoraCartao[];
   clientes: ClientePdv[];
   onSuccess: () => void;
 }) {
   const router = useRouter();
   const subtotal = items.reduce((sum, i) => sum + i.produto.preco_venda * i.quantidade, 0);
   const total = Math.max(subtotal - desconto, 0);
+  const opcoesModalidade = useMemo(() => montarOpcoesModalidade(operadoras), [operadoras]);
 
   const [lines, setLines] = useState<PaymentLine[]>(() => [
     { id: crypto.randomUUID(), forma_pagamento_id: formasPagamento[0]?.id ?? "", valor: total },
@@ -307,7 +340,15 @@ function PaymentForm({
     setLines((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
   }
 
+  const linhaCartaoSemModalidade = lines.some(
+    (l) => formasPagamento.find((f) => f.id === l.forma_pagamento_id)?.eh_cartao && !l.operadora_modalidade_id,
+  );
+
   async function handleFinalizar() {
+    if (linhaCartaoSemModalidade) {
+      toast.error("Selecione a operadora/modalidade do cartão em todas as linhas de cartão.");
+      return;
+    }
     setSubmitting(true);
     try {
       await finalizarVenda({
@@ -315,6 +356,7 @@ function PaymentForm({
         pagamentos: lines.map((l) => ({
           forma_pagamento_id: l.forma_pagamento_id,
           valor: l.valor,
+          operadora_modalidade_id: l.operadora_modalidade_id,
         })),
         desconto,
         clienteId: clienteId ?? undefined,
@@ -336,49 +378,81 @@ function PaymentForm({
         <ClientePicker clientes={clientes} clienteId={clienteId} onChange={setClienteId} />
       </div>
 
-      {lines.map((line) => (
-        <div key={line.id} className="flex items-start gap-2">
-          <div className="flex-1 space-y-1.5">
-            <Label className="block h-5 leading-5">Forma de pagamento</Label>
-            <Select
-              value={line.forma_pagamento_id}
-              onValueChange={(value) => value && updateLine(line.id, { forma_pagamento_id: value })}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue>
-                  {() =>
-                    formasPagamento.find((f) => f.id === line.forma_pagamento_id)?.nome ??
-                    "Selecione"
+      {lines.map((line) => {
+        const forma = formasPagamento.find((f) => f.id === line.forma_pagamento_id);
+        const modalidadeSelecionada = opcoesModalidade.find((o) => o.id === line.operadora_modalidade_id);
+        return (
+          <div key={line.id} className="space-y-1.5">
+            <div className="flex items-start gap-2">
+              <div className="flex-1 space-y-1.5">
+                <Label className="block h-5 leading-5">Forma de pagamento</Label>
+                <Select
+                  value={line.forma_pagamento_id}
+                  onValueChange={(value) =>
+                    value &&
+                    updateLine(line.id, { forma_pagamento_id: value, operadora_modalidade_id: undefined })
                   }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {formasPagamento.map((forma) => (
-                  <SelectItem key={forma.id} value={forma.id}>
-                    {forma.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue>{() => forma?.nome ?? "Selecione"}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {formasPagamento.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>
+                        {f.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-32 space-y-1.5">
+                <Label className="block h-5 leading-5">Valor</Label>
+                <CurrencyInput value={line.valor} onChange={(valor) => updateLine(line.id, { valor })} />
+              </div>
+              {lines.length > 1 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Remover forma de pagamento"
+                  className="mt-7"
+                  onClick={() => removeLine(line.id)}
+                >
+                  <Trash2 className="size-3.5 text-destructive" />
+                </Button>
+              )}
+            </div>
+
+            {forma?.eh_cartao && (
+              <div className="space-y-1">
+                <Select
+                  value={line.operadora_modalidade_id ?? ""}
+                  onValueChange={(value) => value && updateLine(line.id, { operadora_modalidade_id: value })}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue>
+                      {() => modalidadeSelecionada?.label ?? "Selecione a operadora/modalidade"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {opcoesModalidade.map((opcao) => (
+                      <SelectItem key={opcao.id} value={opcao.id}>
+                        {opcao.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {modalidadeSelecionada && (
+                  <p className="text-xs text-muted-foreground">
+                    Valor líquido estimado:{" "}
+                    {formatCurrency(line.valor * (1 - modalidadeSelecionada.taxaPercentual / 100))}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
-          <div className="w-32 space-y-1.5">
-            <Label className="block h-5 leading-5">Valor</Label>
-            <CurrencyInput value={line.valor} onChange={(valor) => updateLine(line.id, { valor })} />
-          </div>
-          {lines.length > 1 && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Remover forma de pagamento"
-              className="mt-7"
-              onClick={() => removeLine(line.id)}
-            >
-              <Trash2 className="size-3.5 text-destructive" />
-            </Button>
-          )}
-        </div>
-      ))}
+        );
+      })}
 
       <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={addLine}>
         <Plus className="size-3.5" />
@@ -395,7 +469,7 @@ function PaymentForm({
       <Button
         type="button"
         className="w-full"
-        disabled={restante !== 0 || submitting || items.length === 0}
+        disabled={restante !== 0 || submitting || items.length === 0 || linhaCartaoSemModalidade}
         onClick={handleFinalizar}
       >
         {submitting ? "Finalizando..." : "Finalizar venda"}
@@ -410,6 +484,7 @@ export function PaymentDialog({
   items,
   desconto,
   formasPagamento,
+  operadoras,
   clientes,
   onSuccess,
 }: {
@@ -418,6 +493,7 @@ export function PaymentDialog({
   items: CartItem[];
   desconto: number;
   formasPagamento: FormaPagamento[];
+  operadoras: OperadoraCartao[];
   clientes: ClientePdv[];
   onSuccess: () => void;
 }) {
@@ -439,6 +515,7 @@ export function PaymentDialog({
             items={items}
             desconto={desconto}
             formasPagamento={formasPagamento}
+            operadoras={operadoras}
             clientes={clientes}
             onSuccess={onSuccess}
           />

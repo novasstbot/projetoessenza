@@ -5,10 +5,16 @@ import { ContasPagarSection } from "@/components/financeiro/contas-pagar-section
 import { ContasReceberSection } from "@/components/financeiro/contas-receber-section";
 import { ContasFinanceirasSaldos } from "@/components/financeiro/contas-financeiras-saldos";
 import { TransferenciaDialog } from "@/components/financeiro/transferencia-dialog";
+import { RecebiveisSection } from "@/components/financeiro/recebiveis-section";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/server/auth/session";
 import { buildTotaisPorCaixa } from "@/lib/caixa/totais";
-import type { ContaFinanceira, ContaPagar, ContaReceber } from "@/modules/financeiro/types";
+import type {
+  ContaFinanceira,
+  ContaPagar,
+  ContaReceber,
+  RecebivelCartao,
+} from "@/modules/financeiro/types";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -46,6 +52,7 @@ export default async function FinanceiroPage() {
     { data: clientes },
     { data: movFinanceiras },
     { data: caixaAberto },
+    { data: recebiveis },
   ] = await Promise.all([
     supabase
       .from("contas_pagar")
@@ -66,6 +73,13 @@ export default async function FinanceiroPage() {
     supabase.from("customers").select("id, full_name").eq("ativo", true).order("full_name"),
     supabase.from("movimentacoes_financeiras").select("conta_id, tipo, valor"),
     supabase.from("caixas").select("id, valor_abertura").eq("status", "aberto").maybeSingle(),
+    supabase
+      .from("recebiveis_cartao")
+      .select(
+        "id, valor_bruto, taxa_percentual, valor_liquido, taxa_antecipacao_percentual, parcelas, data_venda, data_prevista_recebimento, data_recebimento, valor_recebido, antecipado, situacao, observacao, operadoras_cartao(nome), contas_financeiras(nome)",
+      )
+      .order("data_venda", { ascending: false })
+      .limit(200),
   ]);
 
   const pagarList = (contasPagar as unknown as ContaPagar[]) ?? [];
@@ -148,11 +162,18 @@ export default async function FinanceiroPage() {
         />
       </div>
 
-      <ContasReceberSection
-        contas={receberList}
+      <div className="mb-6">
+        <ContasReceberSection
+          contas={receberList}
+          contasFinanceiras={contasFinanceirasList}
+          clientes={clientes ?? []}
+          canManage={canManage}
+        />
+      </div>
+
+      <RecebiveisSection
+        recebiveis={(recebiveis as unknown as RecebivelCartao[]) ?? []}
         contasFinanceiras={contasFinanceirasList}
-        clientes={clientes ?? []}
-        canManage={canManage}
       />
     </div>
   );

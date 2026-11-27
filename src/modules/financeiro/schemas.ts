@@ -92,3 +92,24 @@ export const aporteRetiradaSchema = z.object({
   motivo: z.string().min(3, "Descreva o motivo"),
 });
 export type AporteRetiradaFormValues = z.infer<typeof aporteRetiradaSchema>;
+
+export const operadoraCartaoSchema = z.object({
+  nome: z.string().min(2, "Informe o nome da operadora"),
+});
+export type OperadoraCartaoFormValues = z.infer<typeof operadoraCartaoSchema>;
+
+export const operadoraModalidadeSchema = z.object({
+  modalidade: z.enum(["debito", "credito_vista", "credito_parcelado"]),
+  parcelas: z.number().int().min(1, "Mínimo 1 parcela"),
+  taxaPercentual: z.number().min(0, "Taxa não pode ser negativa").max(100, "Taxa inválida"),
+  taxaAntecipacaoPercentual: z.number().min(0).max(100).optional(),
+  prazoDias: z.number().int().min(0, "Prazo não pode ser negativo"),
+  contaDestinoId: z.string().uuid("Selecione a conta de destino"),
+});
+export type OperadoraModalidadeFormValues = z.infer<typeof operadoraModalidadeSchema>;
+
+export const baixarRecebivelSchema = z.object({
+  valorRecebido: z.number().positive("Informe um valor maior que zero"),
+  contaFinanceiraId: z.string().uuid().optional().or(z.literal("")),
+});
+export type BaixarRecebivelFormValues = z.infer<typeof baixarRecebivelSchema>;

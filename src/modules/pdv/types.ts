@@ -1,6 +1,7 @@
 export type FormaPagamento = {
   id: string;
   nome: string;
+  eh_cartao: boolean;
 };
 
 export type FormaPagamentoConfig = {

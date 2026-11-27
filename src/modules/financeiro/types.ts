@@ -60,6 +60,60 @@ export const movimentacaoCategoriaLabels: Record<MovimentacaoCategoria, string> 
   retirada_socio: "Retirada do proprietário",
 };
 
+export type OperadoraModalidadeTipo = "debito" | "credito_vista" | "credito_parcelado";
+
+export const modalidadeLabels: Record<OperadoraModalidadeTipo, string> = {
+  debito: "Débito",
+  credito_vista: "Crédito à vista",
+  credito_parcelado: "Crédito parcelado",
+};
+
+export type OperadoraModalidade = {
+  id: string;
+  operadora_id: string;
+  modalidade: OperadoraModalidadeTipo;
+  parcelas: number;
+  taxa_percentual: number;
+  taxa_antecipacao_percentual: number | null;
+  prazo_dias: number;
+  conta_destino_id: string | null;
+  ativo: boolean;
+};
+
+export type OperadoraCartao = {
+  id: string;
+  nome: string;
+  ativo: boolean;
+  operadora_modalidades: OperadoraModalidade[];
+};
+
+export type RecebivelCartaoSituacao = "pendente" | "recebido_parcial" | "recebido" | "divergente";
+
+export const recebivelSituacaoLabels: Record<RecebivelCartaoSituacao, string> = {
+  pendente: "Pendente",
+  recebido_parcial: "Recebido parcial",
+  recebido: "Recebido",
+  divergente: "Divergente",
+};
+
+export type RecebivelCartao = {
+  id: string;
+  valor_bruto: number;
+  taxa_percentual: number;
+  valor_liquido: number;
+  taxa_antecipacao_percentual: number | null;
+  parcelas: number;
+  data_venda: string;
+  data_prevista_recebimento: string;
+  data_recebimento: string | null;
+  valor_recebido: number;
+  antecipado: boolean;
+  situacao: RecebivelCartaoSituacao;
+  observacao: string | null;
+  operadoras_cartao: { nome: string } | null;
+  contas_financeiras: { nome: string } | null;
+};
+
 export type MovimentoExtratoConta = {
   id: string;
   tipo: "entrada" | "saida";

@@ -8,6 +8,7 @@ export type AbrirCaixaFormValues = z.infer<typeof abrirCaixaSchema>;
 export const pagamentoSchema = z.object({
   forma_pagamento_id: z.string().uuid(),
   valor: z.number().positive(),
+  operadora_modalidade_id: z.string().uuid().optional(),
 });
 
 export const finalizarVendaSchema = z.object({

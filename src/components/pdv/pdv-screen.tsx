@@ -117,7 +117,7 @@ export function PdvScreen({
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-1.5">
+          <div className="grid grid-cols-3 gap-1.5">
             <SangriaDialog caixaId={caixaId} />
             <SuprimentoDialog caixaId={caixaId} contas={contasSuprimento} />
             <DespesaDialog caixaId={caixaId} />

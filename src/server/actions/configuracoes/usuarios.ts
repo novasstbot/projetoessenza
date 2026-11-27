@@ -14,6 +14,9 @@ export async function criarUsuario(values: {
   const profile = await requireRole(["admin"]);
 
   if (values.fullName.trim().length < 2) throw new Error("Informe o nome completo.");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) {
+    throw new Error("Informe um e-mail válido.");
+  }
   if (values.password.length < 6) throw new Error("A senha precisa ter pelo menos 6 caracteres.");
 
   const admin = createAdminClient();

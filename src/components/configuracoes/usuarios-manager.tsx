@@ -37,6 +37,18 @@ function NovoUsuarioForm({ onDone }: { onDone: () => void }) {
   const [submitting, setSubmitting] = useState(false);
 
   async function handleCreate() {
+    if (fullName.trim().length < 2) {
+      toast.error("Informe o nome completo.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      toast.error("Informe um e-mail válido.");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("A senha precisa ter pelo menos 6 caracteres.");
+      return;
+    }
     setSubmitting(true);
     try {
       await criarUsuario({ fullName, email, password, role });

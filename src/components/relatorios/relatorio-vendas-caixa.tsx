@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Receipt } from "lucide-react";
+import { Receipt, TrendingUp, Wallet, Percent } from "lucide-react";
 import { DateRangeFilter, type DateRange } from "@/components/ui/date-range-filter";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -68,31 +68,43 @@ export function RelatorioVendasCaixa({
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Card>
-          <CardContent className="py-4">
-            <p className="text-xs text-muted-foreground">Total vendido</p>
-            <p className="text-xl font-semibold text-foreground">
-              {formatCurrency(totalVendido)}
-            </p>
+          <CardContent className="flex items-center gap-3 py-4">
+            <TrendingUp className="size-5 shrink-0 text-gold" />
+            <div>
+              <p className="text-xs text-muted-foreground">Total vendido</p>
+              <p className="text-xl font-semibold text-foreground">
+                {formatCurrency(totalVendido)}
+              </p>
+            </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="py-4">
-            <p className="text-xs text-muted-foreground">Nº de vendas</p>
-            <p className="text-xl font-semibold text-foreground">{concluidas.length}</p>
+          <CardContent className="flex items-center gap-3 py-4">
+            <Receipt className="size-5 shrink-0 text-gold" />
+            <div>
+              <p className="text-xs text-muted-foreground">Nº de vendas</p>
+              <p className="text-xl font-semibold text-foreground">{concluidas.length}</p>
+            </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="py-4">
-            <p className="text-xs text-muted-foreground">Ticket médio</p>
-            <p className="text-xl font-semibold text-foreground">{formatCurrency(ticketMedio)}</p>
+          <CardContent className="flex items-center gap-3 py-4">
+            <Wallet className="size-5 shrink-0 text-gold" />
+            <div>
+              <p className="text-xs text-muted-foreground">Ticket médio</p>
+              <p className="text-xl font-semibold text-foreground">{formatCurrency(ticketMedio)}</p>
+            </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="py-4">
-            <p className="text-xs text-muted-foreground">Total de desconto</p>
-            <p className="text-xl font-semibold text-foreground">
-              {formatCurrency(totalDesconto)}
-            </p>
+          <CardContent className="flex items-center gap-3 py-4">
+            <Percent className="size-5 shrink-0 text-gold" />
+            <div>
+              <p className="text-xs text-muted-foreground">Total de desconto</p>
+              <p className="text-xl font-semibold text-foreground">
+                {formatCurrency(totalDesconto)}
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
